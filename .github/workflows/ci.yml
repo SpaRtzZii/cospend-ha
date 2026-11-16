@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+env:
+  # À aligner sur la version de Python requise par Home Assistant
+  # (voir les prérequis de pytest-homeassistant-custom-component).
+  PYTHON_VERSION: "3.13"
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - run: pip install ruff
+      - run: ruff check .
+      - run: ruff format --check .
+
+  python:
+    name: Tests Python (client et intégration)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - run: pip install -r requirements-test.txt
+      - run: pytest -m "not contract"
+
+  card:
+    name: Carte (TypeScript)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: src/cospend_card
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: src/cospend_card/package-lock.json
+      - run: npm ci
+      - run: npm test
+      - run: npm run build

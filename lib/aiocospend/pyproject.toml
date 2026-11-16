@@ -1,0 +1,22 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "aiocospend"
+version = "0.0.1"
+description = "Client asynchrone pour l'API OCS de Nextcloud Cospend"
+readme = "README.md"
+requires-python = ">=3.13"
+license = "GPL-3.0-only"
+dependencies = ["aiohttp>=3.9"]
+
+[project.optional-dependencies]
+test = ["pytest", "pytest-asyncio"]
+
+[project.urls]
+Homepage = "https://github.com/SpaRtzZii/cospend-ha"
+Issues = "https://github.com/SpaRtzZii/cospend-ha/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/aiocospend"]

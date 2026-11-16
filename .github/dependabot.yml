@@ -1,0 +1,14 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+  - package-ecosystem: npm
+    directory: /src/cospend_card
+    schedule:
+      interval: weekly
+  - package-ecosystem: pip
+    directory: /lib/aiocospend
+    schedule:
+      interval: weekly

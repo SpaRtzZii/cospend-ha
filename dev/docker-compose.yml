@@ -1,0 +1,17 @@
+# Serveur de test jetable : Nextcloud (SQLite) + application Cospend.
+# Usage : voir dev/setup-nextcloud.sh et la section « Développement » du README.
+services:
+  nextcloud:
+    image: ${NEXTCLOUD_IMAGE:-nextcloud:stable}
+    ports:
+      - "8080:80"
+    environment:
+      SQLITE_DATABASE: nextcloud
+      NEXTCLOUD_ADMIN_USER: admin
+      NEXTCLOUD_ADMIN_PASSWORD: admin-test-password
+      NEXTCLOUD_TRUSTED_DOMAINS: localhost
+    volumes:
+      - nextcloud_data:/var/www/html
+
+volumes:
+  nextcloud_data:

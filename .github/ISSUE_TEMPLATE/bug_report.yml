@@ -1,0 +1,25 @@
+name: Signaler un bug
+description: Quelque chose ne fonctionne pas comme prévu
+labels: [bug]
+body:
+  - type: input
+    id: versions
+    attributes:
+      label: Versions
+      description: Home Assistant, cospend-ha, Nextcloud et application Cospend
+      placeholder: "HA 2026.11 / cospend-ha 0.1.0 / Nextcloud 32 / Cospend 4.3.0"
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: Que s'est-il passé ?
+      description: Ce que vous attendiez et ce qui s'est produit.
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Journaux
+      description: Extrait des journaux de Home Assistant. Retirez toute donnée personnelle.
+      render: text

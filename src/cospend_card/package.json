@@ -1,0 +1,23 @@
+{
+  "name": "cospend-card",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Carte Lovelace pour Nextcloud Cospend (cospend-ha)",
+  "license": "GPL-3.0-only",
+  "type": "module",
+  "scripts": {
+    "build": "tsc --noEmit && vite build",
+    "dev": "vite build --watch",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "lit": "^3.3.3"
+  },
+  "devDependencies": {
+    "happy-dom": "^21.0.4",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.8",
+    "vitest": "^5.1.0"
+  }
+}

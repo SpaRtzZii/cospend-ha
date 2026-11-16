@@ -1,0 +1,4 @@
+# Environnement de test de l'intégration et du client
+-e lib/aiocospend[test]
+pytest-homeassistant-custom-component
+ruff

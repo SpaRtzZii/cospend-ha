@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+dist/
+build/
+
+# Node
+node_modules/
+
+# Carte compilée : produite par la CI à la publication
+custom_components/cospend/www/cospend-card.js
+custom_components/cospend/www/cospend-card.js.map
+
+# Local
+.env
+.vscode/
+.idea/
