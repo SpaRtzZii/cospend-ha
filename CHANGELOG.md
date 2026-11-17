@@ -9,6 +9,8 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
   paginée et incrémentale des dépenses, création, modification partielle, suppression, statistiques,
   plan de remboursement), modèles typés, exceptions typées, faux serveur Cospend pour les tests,
   test de contrat sur un vrai serveur.
+- Correction (relevée par le test de contrat) : les statistiques sont lues même quand PHP renvoie
+  une liste au lieu d'un objet (dépenses sans catégorie ou sans mode de paiement).
 - Correction : le workflow de contrat ne collecte plus que `tests/contract` (il échouait faute de
   Home Assistant dans cet environnement).
 - CI : tests du client séparés de ceux de l'intégration ; actions GitHub passées en v7.
