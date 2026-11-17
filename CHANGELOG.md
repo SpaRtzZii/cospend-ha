@@ -9,6 +9,8 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
   paginée et incrémentale des dépenses, création, modification partielle, suppression, statistiques,
   plan de remboursement), modèles typés, exceptions typées, faux serveur Cospend pour les tests,
   test de contrat sur un vrai serveur.
+- Correction : le workflow de contrat ne collecte plus que `tests/contract` (il échouait faute de
+  Home Assistant dans cet environnement).
 - CI : tests du client séparés de ceux de l'intégration ; actions GitHub passées en v7.
 - Jalon M0 : structure du dépôt, intégration vide, client `aiocospend` vide, squelette de la carte,
   intégration continue, serveur de test Nextcloud + Cospend en conteneur.

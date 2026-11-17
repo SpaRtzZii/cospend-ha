@@ -27,7 +27,7 @@ jobs:
       - name: Installer Cospend
         run: ./dev/setup-nextcloud.sh
       - name: Tests de contrat
-        run: pytest -m contract
+        run: pytest tests/contract -m contract
       - name: Arrêter Nextcloud
         if: always()
         run: docker compose -f dev/docker-compose.yml down -v

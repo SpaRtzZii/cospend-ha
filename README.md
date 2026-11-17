@@ -47,7 +47,7 @@ Contract tests run against a real Nextcloud with Cospend:
 docker compose -f dev/docker-compose.yml up -d
 ./dev/setup-nextcloud.sh          # waits for Nextcloud, installs Cospend
 export COSPEND_TEST_URL=http://localhost:8080 COSPEND_TEST_USER=admin COSPEND_TEST_PASSWORD=admin-test-password
-pytest -m contract
+pytest tests/contract -m contract
 docker compose -f dev/docker-compose.yml down -v
 ```
 
