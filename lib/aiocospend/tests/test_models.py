@@ -102,3 +102,41 @@ def test_settlement() -> None:
 def test_invalid_payloads_raise(model: type, data: dict) -> None:
     with pytest.raises(CospendResponseError):
         model.from_api(data)
+
+
+def test_statistics_php_lists_are_read_as_tables() -> None:
+    """Régression relevée par le test de contrat : PHP renvoie une liste quand les clés sont 0..n.
+
+    Des dépenses sans catégorie ni mode de paiement (identifiant 0) donnent ``[600]`` au lieu
+    de ``{"0": 600}``.
+    """
+    data = load_fixture("statistics.json")
+    data["categoryStats"] = [600]
+    data["paymentModeStats"] = [600]
+    data["categoryMemberStats"] = [{"12": 0, "13": 600, "14": 0}]
+    data["categoryMonthlyStats"] = [{"2026-11": 600, "Average per month": 600}]
+    stats = ProjectStatistics.from_api(data)
+    assert stats.category_stats == {0: 600.0}
+    assert stats.payment_mode_stats == {0: 600.0}
+    assert stats.category_member == {0: {12: 0.0, 13: 600.0, 14: 0.0}}
+    assert stats.category_monthly == {0: {"2026-11": 600.0}}
+
+
+def test_statistics_empty_tables_may_be_lists() -> None:
+    data = load_fixture("statistics.json")
+    for key in ("categoryStats", "paymentModeStats", "categoryMemberStats", "categoryMonthlyStats"):
+        data[key] = []
+    data["memberMonthlyPaidStats"] = []
+    stats = ProjectStatistics.from_api(data)
+    assert stats.category_stats == {}
+    assert stats.monthly_paid == {}
+    assert stats.category_member == {}
+
+
+def test_localized_average_key_is_ignored_in_any_language() -> None:
+    data = load_fixture("statistics.json")
+    data["memberMonthlyPaidStats"] = {
+        "2026-11": {"12": 1, "0": 1},
+        "Average per month": {"12": 1, "0": 1},
+    }
+    assert set(ProjectStatistics.from_api(data).monthly_paid) == {"2026-11"}

@@ -19,6 +19,21 @@ _MONTH = re.compile(r"^\d{4}-\d{2}$")
 ACCESS_LEVEL_PARTICIPANT = 2
 
 
+def _as_dict(value: Any) -> dict[Any, Any]:
+    """Normalise une table indexée par identifiant.
+
+    Le serveur est en PHP : un tableau dont les clés sont 0, 1, 2… est sérialisé en **liste**
+    JSON au lieu d'un objet. Cas réel : des dépenses sans catégorie donnent
+    ``categoryStats == [600]`` au lieu de ``{"0": 600}``. Une liste est donc lue comme
+    ``{0: v0, 1: v1, …}``.
+    """
+    if isinstance(value, Mapping):
+        return dict(value)
+    if isinstance(value, (list, tuple)):
+        return dict(enumerate(value))
+    return {}
+
+
 def _invalid(kind: str, err: Exception) -> CospendResponseError:
     return CospendResponseError(f"{kind} invalide dans la réponse du serveur : {err!r}")
 
@@ -280,11 +295,11 @@ class Project:
     def from_api(cls, data: Mapping[str, Any]) -> Project:
         try:
             categories = sorted(
-                (Category.from_api(c) for c in (data.get("categories") or {}).values()),
+                (Category.from_api(c) for c in _as_dict(data.get("categories")).values()),
                 key=lambda c: (c.order, c.id),
             )
             payment_modes = sorted(
-                (PaymentMode.from_api(p) for p in (data.get("paymentmodes") or {}).values()),
+                (PaymentMode.from_api(p) for p in _as_dict(data.get("paymentmodes")).values()),
                 key=lambda p: (p.order, p.id),
             )
             archived = data.get("archived_ts")
@@ -299,7 +314,7 @@ class Project:
                 nb_bills=int(data.get("nb_bills") or 0),
                 nb_trashbin_bills=int(data.get("nb_trashbin_bills") or 0),
                 total_spent=float(data.get("total_spent") or 0),
-                balance={int(k): float(v) for k, v in (data.get("balance") or {}).items()},
+                balance={int(k): float(v) for k, v in _as_dict(data.get("balance")).items()},
                 members=tuple(Member.from_api(m) for m in data.get("members") or ()),
                 categories=tuple(categories),
                 payment_modes=tuple(payment_modes),
@@ -327,18 +342,17 @@ def _monthly_by_member(data: Mapping[str, Any] | None) -> dict[str, dict[int, fl
     moyenne dont le libellé est traduit (« Moyenne par mois ») et ne doit jamais servir de clé.
     """
     return {
-        month: {int(k): float(v) for k, v in values.items()}
-        for month, values in (data or {}).items()
-        if _MONTH.match(month) and isinstance(values, Mapping)
+        month: {int(k): float(v) for k, v in _as_dict(values).items()}
+        for month, values in _as_dict(data).items()
+        if _MONTH.match(str(month))
     }
 
 
 def _monthly_by_key(data: Mapping[str, Any] | None) -> dict[int, dict[str, float]]:
     """``{"36": {"2026-11": 1250, "Moyenne par mois": 1250}}`` → ``{36: {"2026-11": 1250.0}}``."""
     return {
-        int(key): {m: float(v) for m, v in values.items() if _MONTH.match(m)}
-        for key, values in (data or {}).items()
-        if isinstance(values, Mapping)
+        int(key): {m: float(v) for m, v in _as_dict(values).items() if _MONTH.match(str(m))}
+        for key, values in _as_dict(data).items()
     }
 
 
@@ -376,15 +390,15 @@ class ProjectStatistics:
                 monthly_paid=_monthly_by_member(data.get("memberMonthlyPaidStats")),
                 monthly_spent=_monthly_by_member(data.get("memberMonthlySpentStats")),
                 category_stats={
-                    int(k): float(v) for k, v in (data.get("categoryStats") or {}).items()
+                    int(k): float(v) for k, v in _as_dict(data.get("categoryStats")).items()
                 },
                 category_monthly=_monthly_by_key(data.get("categoryMonthlyStats")),
                 category_member={
-                    int(cat): {int(m): float(v) for m, v in per.items()}
-                    for cat, per in (data.get("categoryMemberStats") or {}).items()
+                    int(cat): {int(m): float(v) for m, v in _as_dict(per).items()}
+                    for cat, per in _as_dict(data.get("categoryMemberStats")).items()
                 },
                 payment_mode_stats={
-                    int(k): float(v) for k, v in (data.get("paymentModeStats") or {}).items()
+                    int(k): float(v) for k, v in _as_dict(data.get("paymentModeStats")).items()
                 },
                 raw=data,
             )
@@ -416,7 +430,7 @@ class Settlement:
                     Transaction(int(t["from"]), int(t["to"]), float(t["amount"]))
                     for t in data.get("transactions") or ()
                 ),
-                balances={int(k): float(v) for k, v in (data.get("balances") or {}).items()},
+                balances={int(k): float(v) for k, v in _as_dict(data.get("balances")).items()},
             )
         except (KeyError, TypeError, ValueError, AttributeError) as err:
             raise _invalid("Plan de remboursement", err) from err

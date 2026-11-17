@@ -11,6 +11,7 @@ import os
 import aiohttp
 import pytest
 
+from aiocospend.client import basic_auth_header
 from aiocospend.const import (
     API_VERSION,
     CAPABILITIES_PATH,
@@ -27,7 +28,11 @@ PASSWORD = os.environ.get("COSPEND_TEST_PASSWORD", "")
 if not (URL and USER and PASSWORD):
     pytest.skip("variables COSPEND_TEST_* absentes", allow_module_level=True)
 
-HEADERS = {"OCS-APIRequest": "true", "Accept": "application/json"}
+HEADERS = {
+    "OCS-APIRequest": "true",
+    "Accept": "application/json",
+    "Authorization": basic_auth_header(USER, PASSWORD),
+}
 
 
 def _version_tuple(version: str) -> tuple[int, ...]:
@@ -36,7 +41,7 @@ def _version_tuple(version: str) -> tuple[int, ...]:
 
 @pytest.fixture
 async def session():
-    async with aiohttp.ClientSession(auth=aiohttp.BasicAuth(USER, PASSWORD)) as s:
+    async with aiohttp.ClientSession() as s:
         yield s
 
 
