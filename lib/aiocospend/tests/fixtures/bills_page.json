@@ -1,0 +1,208 @@
+{
+  "nb_bills": 6,
+  "bills": [
+    {
+      "id": 37,
+      "projectid": "teste",
+      "what": "util3 → util1",
+      "comment": "",
+      "payer_id": 14,
+      "timestamp": 1794779663,
+      "date": "2026-11-15",
+      "amount": 666.67,
+      "repeat": "n",
+      "repeatallactive": 0,
+      "repeatuntil": null,
+      "repeatfreq": 1,
+      "categoryid": -11,
+      "paymentmode": "n",
+      "paymentmodeid": 0,
+      "deleted": 0,
+      "lastchanged": 1794779663,
+      "owers": [
+        {
+          "id": 12,
+          "weight": 1,
+          "name": "util1",
+          "activated": true
+        }
+      ],
+      "owerIds": [
+        12
+      ]
+    },
+    {
+      "id": 38,
+      "projectid": "teste",
+      "what": "util2 → util1",
+      "comment": "",
+      "payer_id": 13,
+      "timestamp": 1794779663,
+      "date": "2026-11-15",
+      "amount": 16.67,
+      "repeat": "n",
+      "repeatallactive": 0,
+      "repeatuntil": null,
+      "repeatfreq": 1,
+      "categoryid": -11,
+      "paymentmode": "n",
+      "paymentmodeid": 0,
+      "deleted": 0,
+      "lastchanged": 1794779663,
+      "owers": [
+        {
+          "id": 12,
+          "weight": 1,
+          "name": "util1",
+          "activated": true
+        }
+      ],
+      "owerIds": [
+        12
+      ]
+    },
+    {
+      "id": 31,
+      "projectid": "teste",
+      "what": "testfact",
+      "comment": "",
+      "payer_id": 13,
+      "timestamp": 1794777105,
+      "date": "2026-11-15",
+      "amount": 200,
+      "repeat": "n",
+      "repeatallactive": 0,
+      "repeatuntil": null,
+      "repeatfreq": 1,
+      "categoryid": 35,
+      "paymentmode": "c",
+      "paymentmodeid": 16,
+      "deleted": 0,
+      "lastchanged": 1794777151,
+      "owers": [
+        {
+          "id": 13,
+          "weight": 1,
+          "name": "util2",
+          "activated": true
+        }
+      ],
+      "owerIds": [
+        13
+      ]
+    },
+    {
+      "id": 32,
+      "projectid": "teste",
+      "what": "testfact",
+      "comment": "",
+      "payer_id": 13,
+      "timestamp": 1794777105,
+      "date": "2026-11-15",
+      "amount": 150,
+      "repeat": "n",
+      "repeatallactive": 0,
+      "repeatuntil": null,
+      "repeatfreq": 1,
+      "categoryid": 35,
+      "paymentmode": "c",
+      "paymentmodeid": 16,
+      "deleted": 0,
+      "lastchanged": 1794777151,
+      "owers": [
+        {
+          "id": 12,
+          "weight": 1,
+          "name": "util1",
+          "activated": true
+        }
+      ],
+      "owerIds": [
+        12
+      ]
+    },
+    {
+      "id": 33,
+      "projectid": "teste",
+      "what": "testfact",
+      "comment": "",
+      "payer_id": 13,
+      "timestamp": 1794777105,
+      "date": "2026-11-15",
+      "amount": 250,
+      "repeat": "n",
+      "repeatallactive": 0,
+      "repeatuntil": null,
+      "repeatfreq": 1,
+      "categoryid": 35,
+      "paymentmode": "c",
+      "paymentmodeid": 16,
+      "deleted": 0,
+      "lastchanged": 1794777152,
+      "owers": [
+        {
+          "id": 14,
+          "weight": 1,
+          "name": "util3",
+          "activated": true
+        }
+      ],
+      "owerIds": [
+        14
+      ]
+    },
+    {
+      "id": 30,
+      "projectid": "teste",
+      "what": "testfact1",
+      "comment": "",
+      "payer_id": 12,
+      "timestamp": 1794776614,
+      "date": "2026-11-15",
+      "amount": 1250,
+      "repeat": "n",
+      "repeatallactive": 0,
+      "repeatuntil": null,
+      "repeatfreq": 1,
+      "categoryid": 36,
+      "paymentmode": "c",
+      "paymentmodeid": 16,
+      "deleted": 0,
+      "lastchanged": 1794776633,
+      "owers": [
+        {
+          "id": 12,
+          "weight": 1,
+          "name": "util1",
+          "activated": true
+        },
+        {
+          "id": 13,
+          "weight": 1,
+          "name": "util2",
+          "activated": true
+        },
+        {
+          "id": 14,
+          "weight": 1,
+          "name": "util3",
+          "activated": true
+        }
+      ],
+      "owerIds": [
+        12,
+        13,
+        14
+      ]
+    }
+  ],
+  "allBillIds": [
+    30,
+    31,
+    32,
+    33,
+    37,
+    38
+  ],
+  "timestamp": 1794779704
+}

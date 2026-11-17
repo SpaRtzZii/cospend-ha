@@ -1,4 +1,4 @@
-"""Configuration commune des tests."""
+"""Configuration des tests de l'intégration (nécessite pytest-homeassistant-custom-component)."""
 
 import pytest
 

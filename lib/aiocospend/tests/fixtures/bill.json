@@ -1,0 +1,37 @@
+{
+  "id": 39,
+  "projectid": "teste",
+  "what": "test edition modifie",
+  "comment": "apres",
+  "payer_id": 12,
+  "timestamp": 1794780187,
+  "date": "2026-11-15",
+  "amount": 30,
+  "repeat": "n",
+  "repeatallactive": 0,
+  "repeatuntil": null,
+  "repeatfreq": 1,
+  "categoryid": 35,
+  "paymentmode": "c",
+  "paymentmodeid": 16,
+  "deleted": 0,
+  "lastchanged": 1794780283,
+  "owers": [
+    {
+      "id": 12,
+      "weight": 1,
+      "name": "util1",
+      "activated": true
+    },
+    {
+      "id": 13,
+      "weight": 1,
+      "name": "util2",
+      "activated": true
+    }
+  ],
+  "owerIds": [
+    12,
+    13
+  ]
+}

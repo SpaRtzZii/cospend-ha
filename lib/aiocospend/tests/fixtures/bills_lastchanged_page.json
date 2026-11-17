@@ -1,0 +1,51 @@
+{
+  "nb_bills": 7,
+  "bills": [
+    {
+      "id": 39,
+      "amount": 25,
+      "what": "test edition modifie",
+      "comment": "apres",
+      "timestamp": 1794780187,
+      "date": "2026-11-15",
+      "payer_id": 12,
+      "owers": [
+        {
+          "id": 12,
+          "weight": 1,
+          "name": "util1",
+          "activated": true
+        },
+        {
+          "id": 13,
+          "weight": 1,
+          "name": "util2",
+          "activated": true
+        }
+      ],
+      "owerIds": [
+        12,
+        13
+      ],
+      "repeat": "n",
+      "paymentmode": "c",
+      "paymentmodeid": 16,
+      "categoryid": 35,
+      "lastchanged": 1794780238,
+      "repeatallactive": 0,
+      "repeatuntil": null,
+      "repeatfreq": 1,
+      "deleted": 0
+    }
+  ],
+  "allBillIds": [
+    30,
+    31,
+    32,
+    33,
+    37,
+    38,
+    39
+  ],
+  "timestamp": 1794780239
+}

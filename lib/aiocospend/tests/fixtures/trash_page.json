@@ -1,0 +1,45 @@
+{
+  "nb_bills": 1,
+  "bills": [
+    {
+      "id": 35,
+      "amount": -5,
+      "what": "test negatif",
+      "comment": "",
+      "timestamp": 1794778726,
+      "date": "2026-11-15",
+      "payer_id": 12,
+      "owers": [
+        {
+          "id": 12,
+          "weight": 1,
+          "name": "util1",
+          "activated": true
+        },
+        {
+          "id": 13,
+          "weight": 1,
+          "name": "util2",
+          "activated": true
+        }
+      ],
+      "owerIds": [
+        12,
+        13
+      ],
+      "repeat": "n",
+      "paymentmode": "n",
+      "paymentmodeid": 0,
+      "categoryid": 0,
+      "lastchanged": 1794778726,
+      "repeatallactive": 0,
+      "repeatuntil": null,
+      "repeatfreq": 1,
+      "deleted": 1
+    }
+  ],
+  "allBillIds": [
+    35
+  ],
+  "timestamp": 1794778884
+}

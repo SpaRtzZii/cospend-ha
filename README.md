@@ -4,8 +4,9 @@ Home Assistant integration and Lovelace card for [Nextcloud Cospend](https://git
 the shared budget manager. The goal is the same experience as the Android app
 [Cowspent](https://github.com/helcel-net/cowspent), inside your dashboards and automations.
 
-> **Status: under development (milestone M0).** Nothing is usable yet: this repository currently
-> contains the project skeleton, the CI and a throwaway test server. Do not install it in a
+> **Status: under development (milestone M1).** Nothing is usable in Home Assistant yet: the
+> repository contains the project skeleton, the CI, a throwaway test server and the Cospend client
+> library (`aiocospend`). Do not install it in a
 > production Home Assistant.
 
 ## Planned features
@@ -33,8 +34,9 @@ the shared budget manager. The goal is the same experience as the Android app
 ```bash
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements-test.txt
-pytest -m "not contract"
-ruff check .
+pytest lib/aiocospend/tests      # client (n'a pas besoin de Home Assistant)
+pytest tests/components          # intégration (Home Assistant)
+ruff check . && ruff format --check .
 
 cd src/cospend_card && npm ci && npm test && npm run build
 ```
@@ -63,7 +65,7 @@ Intégration Home Assistant et carte Lovelace pour [Nextcloud Cospend](https://g
 avec les mêmes fonctionnalités que l'application Android [Cowspent](https://github.com/helcel-net/cowspent).
 
 **État : en développement (jalon M0).** Le dépôt ne contient pour l'instant que le squelette du projet,
-l'intégration continue et un serveur de test jetable ; ne l'installez pas sur un Home Assistant de production.
+l'intégration continue, un serveur de test jetable et la bibliothèque client `aiocospend` ; ne l'installez pas sur un Home Assistant de production.
 
 Prévu : choix des projets à connecter, services pour créer / modifier / supprimer des dépenses depuis
 les automatisations, mode hors ligne (file d'attente sans doublons), carte Lovelace complète.

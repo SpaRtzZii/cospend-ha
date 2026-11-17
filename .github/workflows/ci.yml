@@ -13,24 +13,35 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: ${{ env.PYTHON_VERSION }}
       - run: pip install ruff
       - run: ruff check .
       - run: ruff format --check .
 
-  python:
-    name: Tests Python (client et intégration)
+  lib:
+    name: Tests du client aiocospend (sans Home Assistant)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - run: pip install -e "lib/aiocospend[test]"
+      - run: pytest lib/aiocospend/tests
+
+  integration:
+    name: Tests de l'intégration (Home Assistant)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: ${{ env.PYTHON_VERSION }}
       - run: pip install -r requirements-test.txt
-      - run: pytest -m "not contract"
+      - run: pytest tests/components
 
   card:
     name: Carte (TypeScript)
@@ -39,8 +50,8 @@ jobs:
       run:
         working-directory: src/cospend_card
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: "22"
           cache: npm

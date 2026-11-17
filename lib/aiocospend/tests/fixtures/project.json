@@ -1,0 +1,243 @@
+{
+  "active_members": [
+    {
+      "id": 12,
+      "name": "util1",
+      "weight": 1,
+      "activated": true,
+      "lastchanged": 1794776595,
+      "userid": null,
+      "color": {
+        "r": 73,
+        "g": 154,
+        "b": 162
+      }
+    },
+    {
+      "id": 13,
+      "name": "util2",
+      "weight": 1,
+      "activated": true,
+      "lastchanged": 1794776611,
+      "userid": null,
+      "color": {
+        "r": 110,
+        "g": 166,
+        "b": 143
+      }
+    },
+    {
+      "id": 14,
+      "name": "util3",
+      "weight": 1,
+      "activated": true,
+      "lastchanged": 1794776603,
+      "userid": null,
+      "color": {
+        "r": 110,
+        "g": 166,
+        "b": 143
+      }
+    }
+  ],
+  "members": [
+    {
+      "id": 12,
+      "name": "util1",
+      "weight": 1,
+      "activated": true,
+      "lastchanged": 1794776595,
+      "userid": null,
+      "color": {
+        "r": 73,
+        "g": 154,
+        "b": 162
+      }
+    },
+    {
+      "id": 13,
+      "name": "util2",
+      "weight": 1,
+      "activated": true,
+      "lastchanged": 1794776611,
+      "userid": null,
+      "color": {
+        "r": 110,
+        "g": 166,
+        "b": 143
+      }
+    },
+    {
+      "id": 14,
+      "name": "util3",
+      "weight": 1,
+      "activated": true,
+      "lastchanged": 1794776603,
+      "userid": null,
+      "color": {
+        "r": 110,
+        "g": 166,
+        "b": 143
+      }
+    }
+  ],
+  "balance": {
+    "12": 683.3333333333333,
+    "13": -16.666666666666686,
+    "14": -666.6666666666667
+  },
+  "nb_bills": 4,
+  "total_spent": 1850,
+  "nb_trashbin_bills": 0,
+  "shares": [],
+  "currencies": [],
+  "categories": {
+    "35": {
+      "id": 35,
+      "projectid": "teste",
+      "name": "Courses",
+      "color": "#ffaa00",
+      "icon": "🛒",
+      "order": 0
+    },
+    "36": {
+      "id": 36,
+      "projectid": "teste",
+      "name": "Bar/Fête",
+      "color": "#aa55ff",
+      "icon": "🎉",
+      "order": 0
+    },
+    "37": {
+      "id": 37,
+      "projectid": "teste",
+      "name": "Loyer",
+      "color": "#da8733",
+      "icon": "🏠",
+      "order": 0
+    },
+    "38": {
+      "id": 38,
+      "projectid": "teste",
+      "name": "Facture",
+      "color": "#4aa6b0",
+      "icon": "🌩",
+      "order": 0
+    },
+    "39": {
+      "id": 39,
+      "projectid": "teste",
+      "name": "Excursion/Culture",
+      "color": "#0055ff",
+      "icon": "🚸",
+      "order": 0
+    },
+    "40": {
+      "id": 40,
+      "projectid": "teste",
+      "name": "Santé",
+      "color": "#bf090c",
+      "icon": "💚",
+      "order": 0
+    },
+    "41": {
+      "id": 41,
+      "projectid": "teste",
+      "name": "Shopping",
+      "color": "#e167d1",
+      "icon": "🛍",
+      "order": 0
+    },
+    "42": {
+      "id": 42,
+      "projectid": "teste",
+      "name": "Restaurant",
+      "color": "#d0d5e1",
+      "icon": "🍴",
+      "order": 0
+    },
+    "43": {
+      "id": 43,
+      "projectid": "teste",
+      "name": "Logement",
+      "color": "#5de1a3",
+      "icon": "🛌",
+      "order": 0
+    },
+    "44": {
+      "id": 44,
+      "projectid": "teste",
+      "name": "Transport",
+      "color": "#6f2ee1",
+      "icon": "🚌",
+      "order": 0
+    },
+    "45": {
+      "id": 45,
+      "projectid": "teste",
+      "name": "Sport",
+      "color": "#69e177",
+      "icon": "🎾",
+      "order": 0
+    }
+  },
+  "paymentmodes": {
+    "16": {
+      "id": 16,
+      "projectid": "teste",
+      "name": "Carte de crédit",
+      "color": "#FF7F50",
+      "icon": "💳",
+      "order": 0,
+      "old_id": "c"
+    },
+    "17": {
+      "id": 17,
+      "projectid": "teste",
+      "name": "Liquide",
+      "color": "#556B2F",
+      "icon": "💵",
+      "order": 0,
+      "old_id": "b"
+    },
+    "18": {
+      "id": 18,
+      "projectid": "teste",
+      "name": "Chèque",
+      "color": "#A9A9A9",
+      "icon": "🎫",
+      "order": 0,
+      "old_id": "f"
+    },
+    "19": {
+      "id": 19,
+      "projectid": "teste",
+      "name": "Virement",
+      "color": "#00CED1",
+      "icon": "⇄",
+      "order": 0,
+      "old_id": "t"
+    },
+    "20": {
+      "id": 20,
+      "projectid": "teste",
+      "name": "Service en ligne",
+      "color": "#9932CC",
+      "icon": "🌎",
+      "order": 0,
+      "old_id": "o"
+    }
+  },
+  "id": "teste",
+  "userid": "admin",
+  "name": "teste",
+  "email": "admin@example.org",
+  "autoexport": "n",
+  "lastchanged": 1794777152,
+  "deletiondisabled": false,
+  "categorysort": "a",
+  "paymentmodesort": "a",
+  "currencyname": null,
+  "archived_ts": null,
+  "myaccesslevel": 4
+}
