@@ -31,13 +31,15 @@ from .models import (
     Share,
     Transaction,
 )
+from .sync import BillChanges, ProjectBills
 from .utils import compare_versions, format_amount, normalize_url, parse_version
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 __all__ = [
     "MIN_COSPEND_VERSION",
     "Bill",
+    "BillChanges",
     "BillsPage",
     "Category",
     "CospendAuthenticationError",
@@ -58,6 +60,7 @@ __all__ = [
     "Ower",
     "PaymentMode",
     "Project",
+    "ProjectBills",
     "ProjectStatistics",
     "ServerInfo",
     "Settlement",

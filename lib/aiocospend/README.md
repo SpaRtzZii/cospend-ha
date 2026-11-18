@@ -1,7 +1,7 @@
 # aiocospend
 
 Client asynchrone (aiohttp) pour l'API OCS de [Nextcloud Cospend](https://github.com/julien-nc/cospend-nc).
-Fait partie du dépôt [cospend-ha](https://github.com/SpaRtzZii/cospend-ha). Version 0.1.0 (jalon M1).
+Fait partie du dépôt [cospend-ha](https://github.com/SpaRtzZii/cospend-ha). Version 0.2.0.
 
 ```python
 import time
@@ -32,6 +32,19 @@ async with aiohttp.ClientSession() as session:
     await client.delete_bill(project.id, bill_id)  # corbeille
 ```
 
+## Synchronisation incrémentale
+
+```python
+from aiocospend import ProjectBills
+
+store = ProjectBills(project.id)
+changes = await store.sync(
+    client, full_sync_max_age=24 * 3600
+)  # complète au besoin, sinon incrémentale
+for bill in changes.added:
+    ...  # changes.updated, changes.deleted ; changes.is_initial = première lecture
+```
+
 ## À savoir (relevé sur Cospend 4.3.0)
 
 - Les écritures sont envoyées en formulaire, avec tous les champs à la création (comme Cowspent).
@@ -47,3 +60,10 @@ async with aiohttp.ClientSession() as session:
 pip install -e ".[test]"
 pytest tests            # faux serveur Cospend local, sans réseau externe
 ```
+
+## Publication sur PyPI (mainteneur)
+
+Le paquet est publié par le workflow manuel `publish-aiocospend.yml`, sans mot de passe, par
+« Trusted Publisher » : sur pypi.org, ajouter un *pending publisher* (propriétaire `SpaRtzZii`,
+dépôt `cospend-ha`, workflow `publish-aiocospend.yml`, environnement `pypi`), créer l'environnement
+`pypi` dans les réglages du dépôt GitHub, puis lancer le workflow depuis l'onglet Actions.

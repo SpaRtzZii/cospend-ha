@@ -1,0 +1,23 @@
+name: Publication de aiocospend sur PyPI
+
+# Lancé à la main, une fois le « Trusted Publisher » configuré sur PyPI (voir lib/aiocospend/README.md).
+on:
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+      - run: pip install build
+      - run: python -m build lib/aiocospend
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: lib/aiocospend/dist/
