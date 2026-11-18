@@ -57,7 +57,7 @@ async def test_add_bill(hass: HomeAssistant, init_integration, fake_client: Fake
     (bill,) = created(fake_client)
     assert response["project"] == PROJECT
     assert response["bill_ids"] == [100]
-    assert (bill["what"], str(bill["amount"]), bill["payer_id"]) == ("Pizza", "20.00", 12)
+    assert (bill["what"], float(bill["amount"]), bill["payer_id"]) == ("Pizza", 20.0, 12)
     assert tuple(bill["payed_for"]) == (12, 13, 14)
     assert (bill["category_id"], bill["payment_mode_id"], bill["payment_mode"]) == (35, 17, "b")
     assert bill["date"] == "2026-11-18"
@@ -90,7 +90,7 @@ async def test_add_bill_with_custom_split(
         shares={"util1": 50, "util2": 25, "util3": 25},
     )
     assert response["bill_ids"] == [100, 101, 102]
-    assert [str(b["amount"]) for b in created(fake_client)] == ["50.00", "25.00", "25.00"]
+    assert [float(b["amount"]) for b in created(fake_client)] == [50.0, 25.0, 25.0]
     assert len({b["timestamp"] for b in created(fake_client)}) == 1
 
 
@@ -109,7 +109,7 @@ async def test_add_bill_with_foreign_currency(
         comment="nuit",
     )
     (bill,) = created(fake_client)
-    assert str(bill["amount"]) == "92.00"
+    assert float(bill["amount"]) == 92.0
     assert bill["comment"] == "nuit #USD:100@0.92"
 
 

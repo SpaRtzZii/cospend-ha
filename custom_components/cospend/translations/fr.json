@@ -118,13 +118,16 @@
       },
       "payment_mode_total": {
         "name": "Mode de paiement : {payment_mode}"
+      },
+      "pending_operations": {
+        "name": "Opérations en attente"
       }
     }
   },
   "services": {
     "add_bill": {
       "name": "Ajouter une dépense",
-      "description": "Enregistre une nouvelle dépense dans un projet Cospend. Une répartition personnalisée (montants ou pourcentages) crée une dépense par participant, comme l'application Cowspent.",
+      "description": "Enregistre une nouvelle dépense dans un projet Cospend. Une répartition personnalisée (montants ou pourcentages) crée une dépense par participant, comme l'application Cowspent. Si Cospend est injoignable, l'opération est mise en file d'attente et envoyée plus tard (la réponse contient queued: true).",
       "fields": {
         "project": {
           "name": "Projet",
@@ -198,7 +201,7 @@
     },
     "update_bill": {
       "name": "Modifier une dépense",
-      "description": "Change certains champs d'une dépense existante. Seuls les champs fournis sont modifiés. Le montant et les participants d'une dépense à répartition personnalisée ne sont pas modifiables.",
+      "description": "Change certains champs d'une dépense existante. Seuls les champs fournis sont modifiés. Le montant et les participants d'une dépense à répartition personnalisée ne sont pas modifiables. Si Cospend est injoignable, l'opération est mise en file d'attente et envoyée plus tard.",
       "fields": {
         "project": {
           "name": "Projet",
@@ -244,7 +247,7 @@
     },
     "delete_bill": {
       "name": "Supprimer une dépense",
-      "description": "Met une dépense à la corbeille de Cospend. Supprimer une dépense à répartition personnalisée supprime toutes ses parts.",
+      "description": "Met une dépense à la corbeille de Cospend. Supprimer une dépense à répartition personnalisée supprime toutes ses parts. Si Cospend est injoignable, l'opération est mise en file d'attente et envoyée plus tard.",
       "fields": {
         "project": {
           "name": "Projet",
@@ -257,6 +260,30 @@
         "whole_group": {
           "name": "Tout le groupe",
           "description": "Supprimer toutes les parts d'une dépense à répartition personnalisée (sinon seulement celle indiquée)."
+        }
+      }
+    },
+    "retry_queued": {
+      "name": "Relancer des opérations en file d'attente",
+      "description": "Remet les opérations bloquées en attente et tente d'envoyer la file tout de suite. Sans identifiant, toutes les opérations bloquées sont relancées.",
+      "fields": {
+        "operation_id": {
+          "name": "Identifiant de l'opération",
+          "description": "Identifiant affiché dans la réparation ou dans les attributs du capteur. Toutes les opérations bloquées si vide."
+        },
+        "force": {
+          "name": "Ignorer les conflits",
+          "description": "Appliquer l'opération même si la dépense a été modifiée ou supprimée ailleurs entre-temps."
+        }
+      }
+    },
+    "discard_queued": {
+      "name": "Abandonner une opération en file d'attente",
+      "description": "Abandonne une opération en attente ou bloquée. Rien de ce qui a déjà été écrit dans Cospend n'est annulé.",
+      "fields": {
+        "operation_id": {
+          "name": "Identifiant de l'opération",
+          "description": "Identifiant affiché dans la réparation ou dans les attributs du capteur."
         }
       }
     }
@@ -311,6 +338,27 @@
     },
     "request_failed": {
       "message": "Échec de la requête Cospend : {error}"
+    },
+    "operation_not_found": {
+      "message": "Aucune opération en file d'attente n'a l'identifiant « {operation} »."
+    }
+  },
+  "issues": {
+    "blocked_conflict": {
+      "title": "Opération Cospend bloquée : dépense modifiée ailleurs",
+      "description": "L'opération en file d'attente « {title} » (projet {project}) n'a pas été envoyée car la dépense a été modifiée ou supprimée dans Cospend depuis ta demande. Vérifie la dépense dans Cospend, puis appelle l'action cospend.retry_queued avec operation_id {operation_id} (ajoute force: true pour l'appliquer quand même) ou cospend.discard_queued pour l'abandonner."
+    },
+    "blocked_bill_missing": {
+      "title": "Opération Cospend bloquée : dépense introuvable",
+      "description": "L'opération en file d'attente « {title} » (projet {project}) vise la dépense {error}, qui n'existe plus dans Cospend. Appelle cospend.discard_queued avec operation_id {operation_id} pour l'abandonner."
+    },
+    "blocked_project_missing": {
+      "title": "Opération Cospend bloquée : projet indisponible",
+      "description": "L'opération en file d'attente « {title} » vise le projet {project}, qui n'est plus configuré ou accessible. Ajoute de nouveau le projet dans les options de l'intégration puis appelle cospend.retry_queued, ou appelle cospend.discard_queued avec operation_id {operation_id}."
+    },
+    "blocked_request_failed": {
+      "title": "Opération Cospend bloquée : requête refusée",
+      "description": "Cospend a refusé l'opération en file d'attente « {title} » (projet {project}) : {error}. Corrige la cause puis appelle cospend.retry_queued, ou appelle cospend.discard_queued avec operation_id {operation_id}."
     }
   }
 }

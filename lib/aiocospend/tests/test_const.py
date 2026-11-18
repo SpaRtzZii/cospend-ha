@@ -5,7 +5,7 @@ from aiocospend import const
 
 
 def test_version_and_minimum() -> None:
-    assert aiocospend.__version__ == "0.3.0"
+    assert aiocospend.__version__ == "0.4.0"
     assert aiocospend.MIN_COSPEND_VERSION == "1.6.1"
 
 

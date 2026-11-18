@@ -118,13 +118,16 @@
       },
       "payment_mode_total": {
         "name": "Payment mode: {payment_mode}"
+      },
+      "pending_operations": {
+        "name": "Pending operations"
       }
     }
   },
   "services": {
     "add_bill": {
       "name": "Add a bill",
-      "description": "Records a new expense in a Cospend project. A custom split (amounts or percentages) creates one bill per participant, like the Cowspent app.",
+      "description": "Records a new expense in a Cospend project. A custom split (amounts or percentages) creates one bill per participant, like the Cowspent app. If Cospend cannot be reached, the operation is queued and sent later (the response has queued: true).",
       "fields": {
         "project": {
           "name": "Project",
@@ -198,7 +201,7 @@
     },
     "update_bill": {
       "name": "Update a bill",
-      "description": "Changes some fields of an existing bill. Only the fields you provide are changed. The amount and participants of a custom-split bill cannot be changed.",
+      "description": "Changes some fields of an existing bill. Only the fields you provide are changed. The amount and participants of a custom-split bill cannot be changed. If Cospend cannot be reached, the operation is queued and sent later.",
       "fields": {
         "project": {
           "name": "Project",
@@ -244,7 +247,7 @@
     },
     "delete_bill": {
       "name": "Delete a bill",
-      "description": "Moves a bill to the Cospend trash. Deleting a custom-split bill removes all its parts.",
+      "description": "Moves a bill to the Cospend trash. Deleting a custom-split bill removes all its parts. If Cospend cannot be reached, the operation is queued and sent later.",
       "fields": {
         "project": {
           "name": "Project",
@@ -257,6 +260,30 @@
         "whole_group": {
           "name": "Whole group",
           "description": "Delete every part of a custom-split bill (otherwise only the given one)."
+        }
+      }
+    },
+    "retry_queued": {
+      "name": "Retry queued operations",
+      "description": "Puts blocked operations back in the queue and tries to send the queue now. Without an operation identifier, every blocked operation is retried.",
+      "fields": {
+        "operation_id": {
+          "name": "Operation identifier",
+          "description": "Identifier shown in the repair issue or in the sensor attributes. All blocked operations when empty."
+        },
+        "force": {
+          "name": "Ignore conflicts",
+          "description": "Apply the operation even if the bill was changed or deleted elsewhere in the meantime."
+        }
+      }
+    },
+    "discard_queued": {
+      "name": "Discard a queued operation",
+      "description": "Abandons a queued or blocked operation. Nothing already written to Cospend is undone.",
+      "fields": {
+        "operation_id": {
+          "name": "Operation identifier",
+          "description": "Identifier shown in the repair issue or in the sensor attributes."
         }
       }
     }
@@ -311,6 +338,27 @@
     },
     "request_failed": {
       "message": "Cospend request failed: {error}"
+    },
+    "operation_not_found": {
+      "message": "No queued operation has the identifier “{operation}”."
+    }
+  },
+  "issues": {
+    "blocked_conflict": {
+      "title": "Cospend operation blocked: bill changed elsewhere",
+      "description": "The queued operation “{title}” (project {project}) was not sent because the bill was changed or deleted on Cospend after you asked for it. Check the bill in Cospend, then call the cospend.retry_queued action with operation_id {operation_id} (add force: true to apply it anyway) or cospend.discard_queued to abandon it."
+    },
+    "blocked_bill_missing": {
+      "title": "Cospend operation blocked: bill not found",
+      "description": "The queued operation “{title}” (project {project}) targets bill {error}, which no longer exists on Cospend. Call cospend.discard_queued with operation_id {operation_id} to abandon it."
+    },
+    "blocked_project_missing": {
+      "title": "Cospend operation blocked: project unavailable",
+      "description": "The queued operation “{title}” targets project {project}, which is no longer configured or accessible. Add the project back in the integration options, then call cospend.retry_queued, or call cospend.discard_queued with operation_id {operation_id}."
+    },
+    "blocked_request_failed": {
+      "title": "Cospend operation blocked: request refused",
+      "description": "Cospend refused the queued operation “{title}” (project {project}): {error}. Fix the cause, then call cospend.retry_queued, or call cospend.discard_queued with operation_id {operation_id}."
     }
   }
 }

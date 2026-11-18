@@ -7,23 +7,35 @@ Règles :
   (voir ``grouping``) ;
 * une opération sur plusieurs dépenses est séquentielle et **jamais rejouée** : si elle échoue en
   cours de route, ``PartialWriteError`` indique exactement ce qui a déjà été fait ;
-* les suppressions vont à la corbeille (une seconde suppression serait définitive).
+* les suppressions vont à la corbeille (une seconde suppression serait définitive) ;
+* chaque opération se décompose en un **plan** (calculé sans réseau, sérialisable en JSON) et une
+  **exécution** : c'est ce qui permet à l'intégration de mettre un plan en file d'attente quand
+  Cospend est injoignable, puis de le rejouer sans doublon (``spec_matches_bill`` et
+  ``fields_applied`` détectent ce qui a déjà été fait).
 """
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from datetime import datetime
 from decimal import Decimal
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from .const import NO_CATEGORY_ID, NO_PAYMENT_MODE_ID, REPEAT_CODES, REPEAT_NONE
 from .currency import ForeignAmount, join_comment, split_comment
-from .exceptions import CospendError, CospendNotFoundError
+from .exceptions import (
+    CospendConnectionError,
+    CospendError,
+    CospendMaintenanceError,
+    CospendNotFoundError,
+    CospendServerError,
+    CospendSSLError,
+)
 from .expression import parse_amount
 from .grouping import GroupedBill, find_group
 from .models import Bill, Project
 from .splits import SplitError, SplitMode, SplitPart, allocate, compute_split, from_cents, to_cents
+from .utils import format_amount
 
 if TYPE_CHECKING:
     from .client import CospendClient
@@ -112,6 +124,19 @@ def _repeat(repeat: str | None) -> str:
     return code
 
 
+# ------------------------------------------------------------------ classification
+
+
+def is_transient(error: BaseException) -> bool:
+    """Erreur passagère (réseau, maintenance, 5xx) : l'opération peut être rejouée plus tard.
+
+    Les erreurs de certificat, d'authentification, de droits ou de requête ne le sont pas.
+    """
+    if isinstance(error, CospendSSLError):
+        return False
+    return isinstance(error, CospendConnectionError | CospendMaintenanceError | CospendServerError)
+
+
 # ------------------------------------------------------------------------ création
 
 
@@ -121,8 +146,7 @@ def _stamp(when: datetime) -> tuple[int, str]:
     return int(when.timestamp()), when.date().isoformat()
 
 
-async def add_bill(
-    client: CospendClient,
+def plan_add_bill(
     project: Project,
     *,
     what: str,
@@ -141,8 +165,8 @@ async def add_bill(
     repeat_freq: int | None = None,
     repeat_until: str | None = None,
     repeat_all_active: int | None = None,
-) -> list[int]:
-    """Crée une dépense (ou plusieurs, pour une répartition personnalisée) et renvoie les ids."""
+) -> list[dict[str, Any]]:
+    """Calcule les dépenses à créer (arguments de ``create_bill``, sérialisables en JSON)."""
     if not what.strip():
         raise ValueError("le titre est requis")
     total = parse_amount(amount)
@@ -177,36 +201,58 @@ async def add_bill(
             ]
     full_comment = join_comment(comment, foreign)
 
-    created: list[int] = []
-    for part in parts:
+    return [
+        {
+            "what": what.strip(),
+            "amount": format_amount(part.amount),
+            "payer_id": payer_id,
+            "payed_for": list(part.ower_ids),
+            "timestamp": timestamp,
+            "date": date,
+            "comment": full_comment,
+            "category_id": category_id,
+            "payment_mode_id": mode_id,
+            "payment_mode": mode_code,
+            "repeat": repeat_code,
+            "repeat_freq": repeat_freq,
+            "repeat_until": repeat_until,
+            "repeat_all_active": repeat_all_active,
+        }
+        for part in parts
+    ]
+
+
+async def _run_steps(items: Sequence[Any], step, label: str) -> list[int]:
+    """Exécute ``step(item)`` en séquence ; en cas d'échec, signale ce qui est déjà fait."""
+    done: list[int] = []
+    for item in items:
         try:
-            bill_id = await client.create_bill(
-                project.id,
-                what=what.strip(),
-                amount=part.amount,
-                payer_id=payer_id,
-                payed_for=part.ower_ids,
-                timestamp=timestamp,
-                date=date,
-                comment=full_comment,
-                category_id=category_id,
-                payment_mode_id=mode_id,
-                payment_mode=mode_code,
-                repeat=repeat_code,
-                repeat_freq=repeat_freq,
-                repeat_until=repeat_until,
-                repeat_all_active=repeat_all_active,
-            )
+            done.append(await step(item))
         except Exception as err:
-            if not created:
+            if not done:
                 raise
             raise PartialWriteError(
-                f"{len(created)} dépense(s) sur {len(parts)} créée(s) avant l'échec : {created}",
-                done=created,
+                f"{len(done)} dépense(s) sur {len(items)} {label} avant l'échec : {done}",
+                done=done,
                 cause=err,
             ) from err
-        created.append(bill_id)
-    return created
+    return done
+
+
+async def execute_creates(
+    client: CospendClient, project_id: str, specs: Sequence[Mapping[str, Any]]
+) -> list[int]:
+    """Crée les dépenses d'un plan, dans l'ordre, sans jamais rejouer."""
+
+    async def step(spec: Mapping[str, Any]) -> int:
+        return await client.create_bill(project_id, **spec)
+
+    return await _run_steps(specs, step, "créée(s)")
+
+
+async def add_bill(client: CospendClient, project: Project, **kwargs: Any) -> list[int]:
+    """Crée une dépense (ou plusieurs, pour une répartition personnalisée) et renvoie les ids."""
+    return await execute_creates(client, project.id, plan_add_bill(project, **kwargs))
 
 
 # ------------------------------------------------------------------ modification
@@ -219,8 +265,7 @@ def _locate(bills: Mapping[int, Bill], bill_id: int) -> GroupedBill:
     return group
 
 
-async def update_bill(
-    client: CospendClient,
+def plan_update_bill(
     project: Project,
     bills: Mapping[int, Bill],
     bill_id: int,
@@ -233,20 +278,20 @@ async def update_bill(
     comment: str | None = None,
     category: str | int | None = None,
     payment_mode: str | int | None = None,
-) -> list[int]:
-    """Modifie une dépense ; pour un groupe, les champs communs sont appliqués à toutes.
+) -> list[tuple[int, dict[str, Any]]]:
+    """Calcule les modifications (identifiant, champs), un couple par dépense concernée.
 
-    Le montant et les participants d'un groupe ne sont pas modifiables (supprime et recrée).
+    Pour un groupe, les champs communs sont appliqués à toutes ses dépenses ; le montant et
+    les participants d'un groupe ne sont pas modifiables (supprimer puis recréer).
     """
     group = _locate(bills, bill_id)
-    changes_split = amount is not None or owers is not None
-    if group.is_group and changes_split:
+    if group.is_group and (amount is not None or owers is not None):
         raise SplitError(
             "le montant et les participants d'une dépense à répartition personnalisée ne "
             "peuvent pas être modifiés : supprime-la puis recrée-la"
         )
 
-    fields: dict[str, object] = {}
+    fields: dict[str, Any] = {}
     if what is not None:
         if not what.strip():
             raise ValueError("le titre ne peut pas être vide")
@@ -267,11 +312,11 @@ async def update_bill(
         value = parse_amount(amount)
         if value <= 0:
             raise SplitError("le montant doit être positif")
-        fields["amount"] = value
+        fields["amount"] = format_amount(value)
     if not fields and comment is None:
         raise ValueError("aucun champ à modifier")
 
-    updated: list[int] = []
+    plan: list[tuple[int, dict[str, Any]]] = []
     for bill in group.bills:
         bill_fields = dict(fields)
         if comment is not None or "amount" in fields:
@@ -281,21 +326,54 @@ async def update_bill(
             if comment is not None:
                 text = comment
             bill_fields["comment"] = join_comment(text, foreign)
-        try:
-            await client.update_bill(project.id, bill.id, **bill_fields)
-        except Exception as err:
-            if not updated:
-                raise
-            raise PartialWriteError(
-                f"{len(updated)} dépense(s) sur {len(group.bills)} modifiée(s) avant l'échec",
-                done=updated,
-                cause=err,
-            ) from err
-        updated.append(bill.id)
-    return updated
+        plan.append((bill.id, bill_fields))
+    return plan
+
+
+async def execute_updates(
+    client: CospendClient, project_id: str, plan: Sequence[tuple[int, Mapping[str, Any]]]
+) -> list[int]:
+    async def step(item: tuple[int, Mapping[str, Any]]) -> int:
+        bill_id, fields = item
+        await client.update_bill(project_id, bill_id, **fields)
+        return bill_id
+
+    return await _run_steps(plan, step, "modifiée(s)")
+
+
+async def update_bill(
+    client: CospendClient,
+    project: Project,
+    bills: Mapping[int, Bill],
+    bill_id: int,
+    **kwargs: Any,
+) -> list[int]:
+    """Modifie une dépense ; pour un groupe, les champs communs sont appliqués à toutes."""
+    plan = plan_update_bill(project, bills, bill_id, **kwargs)
+    return await execute_updates(client, project.id, plan)
 
 
 # ------------------------------------------------------------------- suppression
+
+
+def plan_delete_bill(
+    bills: Mapping[int, Bill], bill_id: int, *, whole_group: bool = True
+) -> list[int]:
+    """Identifiants à mettre à la corbeille : la dépense, ou tout son groupe."""
+    group = _locate(bills, bill_id)
+    return list(group.ids) if whole_group else [bill_id]
+
+
+async def execute_deletes(
+    client: CospendClient, project_id: str, bill_ids: Sequence[int]
+) -> list[int]:
+    """Met à la corbeille, une fois chacune. Jamais rejoué."""
+
+    async def step(bill_id: int) -> int:
+        await client.delete_bill(project_id, bill_id)
+        return bill_id
+
+    return await _run_steps(bill_ids, step, "supprimée(s)")
 
 
 async def delete_bill(
@@ -307,19 +385,47 @@ async def delete_bill(
     whole_group: bool = True,
 ) -> list[int]:
     """Met à la corbeille une dépense, ou tout son groupe. Jamais rejoué."""
-    group = _locate(bills, bill_id)
-    targets = list(group.ids) if whole_group else [bill_id]
-    deleted: list[int] = []
-    for target in targets:
-        try:
-            await client.delete_bill(project_id, target)
-        except Exception as err:
-            if not deleted:
-                raise
-            raise PartialWriteError(
-                f"{len(deleted)} dépense(s) sur {len(targets)} supprimée(s) avant l'échec",
-                done=deleted,
-                cause=err,
-            ) from err
-        deleted.append(target)
-    return deleted
+    return await execute_deletes(
+        client, project_id, plan_delete_bill(bills, bill_id, whole_group=whole_group)
+    )
+
+
+# ------------------------------------------------- détection de ce qui est déjà fait
+
+
+def _same_amount(left: float, right: str | float) -> bool:
+    return abs(float(left) - float(right)) < 0.005
+
+
+def spec_matches_bill(spec: Mapping[str, Any], bill: Bill) -> bool:
+    """La dépense du serveur est-elle celle que ce plan de création produirait ?
+
+    Sert à ne pas recréer une dépense dont la création a abouti sans que la réponse nous soit
+    parvenue (délai dépassé, coupure) : titre, seconde, payeur, montant, participants et
+    commentaire doivent tous correspondre.
+    """
+    return (
+        bill.what == spec["what"]
+        and bill.timestamp == spec["timestamp"]
+        and bill.payer_id == spec["payer_id"]
+        and _same_amount(bill.amount, spec["amount"])
+        and set(bill.ower_ids) == set(spec["payed_for"])
+        and bill.comment == spec["comment"]
+    )
+
+
+def fields_applied(fields: Mapping[str, Any], bill: Bill) -> bool:
+    """Tous les champs d'une modification sont-ils déjà ceux de la dépense du serveur ?"""
+    checks = {
+        "what": lambda v: bill.what == v,
+        "payer_id": lambda v: bill.payer_id == v,
+        "timestamp": lambda v: bill.timestamp == v,
+        "date": lambda v: bill.date == v,
+        "category_id": lambda v: bill.category_id == v,
+        "payment_mode_id": lambda v: bill.payment_mode_id == v,
+        "payment_mode": lambda v: bill.payment_mode == v,
+        "payed_for": lambda v: set(bill.ower_ids) == set(v),
+        "amount": lambda v: _same_amount(bill.amount, v),
+        "comment": lambda v: bill.comment == v,
+    }
+    return all(checks[key](value) for key, value in fields.items() if key in checks)

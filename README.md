@@ -4,9 +4,9 @@ Home Assistant integration and Lovelace card for [Nextcloud Cospend](https://git
 the shared budget manager. The goal is the same experience as the Android app
 [Cowspent](https://github.com/helcel-net/cowspent), inside your dashboards and automations.
 
-> **Status: under development (milestone M3).** The integration reads your projects (sensors,
-> events) and provides services to add, update and delete expenses. The Lovelace card and the
-> offline queue are not available yet. Do not rely on it in a production Home Assistant.
+> **Status: under development (milestone M4).** The integration reads your projects (sensors,
+> events), provides services to add, update and delete expenses, and queues them when Nextcloud is
+> unreachable. The Lovelace card is not available yet. Do not rely on it in a production Home Assistant.
 
 ## Planned features
 
@@ -42,6 +42,20 @@ data:
   shares: { Alice: 60, Bob: 40 }
 response_variable: result
 ```
+
+## Offline mode
+
+If Cospend cannot be reached (network, maintenance, 5xx), `add_bill`, `update_bill` and
+`delete_bill` queue the operation instead of failing: the response contains `queued: true` and an
+`operation_id`. The queue is stored on disk, replayed every minute and at startup, in order, and
+never creates duplicates or deletes twice. If a bill was changed or deleted elsewhere in the
+meantime, the operation is **blocked** (a repair issue and a `cospend_operation_blocked` event tell
+you) until you call `cospend.retry_queued` (`force: true` applies it anyway) or
+`cospend.discard_queued`. A *Pending operations* sensor shows the queue of each project.
+Invalid input, missing permissions and authentication errors are reported immediately, never queued.
+
+Limitation: Home Assistant must have read the projects once to accept operations, so the
+integration cannot start while Nextcloud is down (queued operations are kept and replayed later).
 
 ## Repository layout
 
@@ -88,7 +102,7 @@ GPL-3.0 — see [`LICENSE`](LICENSE) and [`NOTICE.md`](NOTICE.md).
 Intégration Home Assistant et carte Lovelace pour [Nextcloud Cospend](https://github.com/julien-nc/cospend-nc),
 avec les mêmes fonctionnalités que l'application Android [Cowspent](https://github.com/helcel-net/cowspent).
 
-**État : en développement (jalon M3).** L'intégration lit vos projets (capteurs, événements) et fournit les services `cospend.add_bill`, `cospend.update_bill` et `cospend.delete_bill`. La carte Lovelace et la file d'attente hors ligne ne sont pas encore disponibles.
+**État : en développement (jalon M4).** L'intégration lit vos projets (capteurs, événements), fournit les services `cospend.add_bill`, `cospend.update_bill` et `cospend.delete_bill`, et met les écritures en file d'attente quand Nextcloud est injoignable (rejeu sans doublon, conflits signalés). La carte Lovelace n'est pas encore disponible.
 
 Prévu : choix des projets à connecter, services pour créer / modifier / supprimer des dépenses depuis
 les automatisations, mode hors ligne (file d'attente sans doublons), carte Lovelace complète.

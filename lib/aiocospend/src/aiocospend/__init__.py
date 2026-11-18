@@ -42,16 +42,34 @@ from .writer import (
     ResolutionError,
     add_bill,
     delete_bill,
+    execute_creates,
+    execute_deletes,
+    execute_updates,
+    fields_applied,
+    is_transient,
+    plan_add_bill,
+    plan_delete_bill,
+    plan_update_bill,
     resolve_category,
     resolve_member,
     resolve_owers,
     resolve_payment_mode,
+    spec_matches_bill,
     update_bill,
 )
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"
 
 __all__ = [
+    "execute_creates",
+    "execute_deletes",
+    "execute_updates",
+    "fields_applied",
+    "is_transient",
+    "plan_add_bill",
+    "plan_delete_bill",
+    "plan_update_bill",
+    "spec_matches_bill",
     "ExpressionError",
     "ForeignAmount",
     "GroupedBill",

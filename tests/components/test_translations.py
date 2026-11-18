@@ -76,3 +76,19 @@ def test_braces_are_only_valid_placeholders(lang: str) -> None:
         for inner in re.findall(r"\{([^}]*)\}", text):
             assert re.fullmatch(r"[a-zA-Z_][a-zA-Z0-9_]*", inner), text
         assert text.count("{") == text.count("}"), text
+
+
+@pytest.mark.parametrize("lang", ["en", "fr"])
+def test_every_blocking_reason_has_a_repair_issue(lang: str) -> None:
+    from custom_components.cospend import queue
+
+    reasons = {
+        queue.REASON_CONFLICT,
+        queue.REASON_BILL_MISSING,
+        queue.REASON_PROJECT_MISSING,
+        queue.REASON_REQUEST_FAILED,
+    }
+    issues = load(lang)["issues"]
+    for reason in reasons:
+        assert issues[f"blocked_{reason}"]["title"]
+        assert issues[f"blocked_{reason}"]["description"]

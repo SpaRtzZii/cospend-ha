@@ -12,6 +12,7 @@ from homeassistant.components.sensor import (
     SensorEntityDescription,
     SensorStateClass,
 )
+from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.typing import StateType
@@ -288,6 +289,10 @@ async def async_setup_entry(
     _add_new_sensors()
     entry.async_on_unload(coordinator.async_add_listener(_add_new_sensors))
 
+    async_add_entities(
+        CospendQueueSensor(coordinator, project_id) for project_id in coordinator.data
+    )
+
 
 class CospendSensor(CospendEntity, SensorEntity):
     """Capteur d'un projet, d'un membre, d'une catégorie ou d'un mode de paiement."""
@@ -330,3 +335,39 @@ class CospendSensor(CospendEntity, SensorEntity):
         if data is None or attrs_fn is None:
             return None
         return attrs_fn(data)
+
+
+class CospendQueueSensor(CospendEntity, SensorEntity):
+    """Nombre d'écritures en attente d'envoi (Cospend injoignable) ou bloquées, par projet."""
+
+    _attr_translation_key = "pending_operations"
+    _attr_icon = "mdi:cloud-upload-outline"
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_state_class = SensorStateClass.MEASUREMENT
+
+    def __init__(self, coordinator: CospendCoordinator, project_id: str) -> None:
+        super().__init__(coordinator, project_id)
+        self._attr_unique_id = sensor_unique_id(
+            coordinator.config_entry.entry_id, project_id, "pending_operations", None
+        )
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        # Doit réagir à la file elle-même, y compris quand Cospend ne répond plus.
+        self.async_on_remove(self.coordinator.queue.async_add_listener(self.async_write_ha_state))
+
+    @property
+    def available(self) -> bool:
+        return self.project_data is not None
+
+    @property
+    def native_value(self) -> int:
+        return len(self.coordinator.queue.for_project(self._project_id))
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        operations = self.coordinator.queue.for_project(self._project_id)
+        return {
+            "blocked": sum(op.status == "blocked" for op in operations),
+            "operations": [op.summary() for op in operations],
+        }

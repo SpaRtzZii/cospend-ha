@@ -35,6 +35,7 @@ from .const import (
     EVENT_BILL_DELETED,
     EVENT_BILL_UPDATED,
 )
+from .queue import OperationQueue
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -72,6 +73,7 @@ class CospendCoordinator(DataUpdateCoordinator[dict[str, ProjectData]]):
             update_interval=timedelta(minutes=minutes),
         )
         self.client = client
+        self.queue = OperationQueue(hass, entry.entry_id)
         self._full_resync_seconds = (
             entry.options.get(CONF_FULL_RESYNC_HOURS, DEFAULT_FULL_RESYNC_HOURS) * 3600
         )

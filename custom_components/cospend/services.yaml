@@ -142,3 +142,18 @@ delete_bill:
       default: true
       selector:
         boolean:
+retry_queued:
+  fields:
+    operation_id:
+      selector:
+        text:
+    force:
+      default: false
+      selector:
+        boolean:
+discard_queued:
+  fields:
+    operation_id:
+      required: true
+      selector:
+        text:
