@@ -1,0 +1,144 @@
+add_bill:
+  fields:
+    project:
+      required: true
+      example: vacances
+      selector:
+        text:
+    title:
+      required: true
+      example: Courses
+      selector:
+        text:
+    amount:
+      required: true
+      example: "12,5 + 7"
+      selector:
+        text:
+    payer:
+      required: true
+      example: Alice
+      selector:
+        text:
+    owers:
+      example: '["Alice", "Bob"]'
+      selector:
+        text:
+          multiple: true
+    split_mode:
+      default: even
+      selector:
+        select:
+          translation_key: split_mode
+          options:
+            - even
+            - amounts
+            - percent
+    shares:
+      example: '{"Alice": 60, "Bob": 40}'
+      selector:
+        object:
+    category:
+      selector:
+        text:
+    payment_mode:
+      selector:
+        text:
+    date:
+      selector:
+        datetime:
+    comment:
+      selector:
+        text:
+          multiline: true
+    currency:
+      example: USD
+      selector:
+        text:
+    exchange_rate:
+      selector:
+        number:
+          min: 0
+          step: any
+          mode: box
+    repeat:
+      selector:
+        select:
+          translation_key: repeat
+          options:
+            - n
+            - d
+            - w
+            - b
+            - s
+            - m
+            - y
+    repeat_frequency:
+      selector:
+        number:
+          min: 1
+          max: 999
+          mode: box
+    repeat_until:
+      selector:
+        date:
+    repeat_all_active:
+      selector:
+        boolean:
+update_bill:
+  fields:
+    project:
+      required: true
+      example: vacances
+      selector:
+        text:
+    bill_id:
+      required: true
+      selector:
+        number:
+          min: 1
+          mode: box
+    title:
+      selector:
+        text:
+    amount:
+      example: "42,5"
+      selector:
+        text:
+    payer:
+      selector:
+        text:
+    owers:
+      selector:
+        text:
+          multiple: true
+    category:
+      selector:
+        text:
+    payment_mode:
+      selector:
+        text:
+    date:
+      selector:
+        datetime:
+    comment:
+      selector:
+        text:
+          multiline: true
+delete_bill:
+  fields:
+    project:
+      required: true
+      example: vacances
+      selector:
+        text:
+    bill_id:
+      required: true
+      selector:
+        number:
+          min: 1
+          mode: box
+    whole_group:
+      default: true
+      selector:
+        boolean:

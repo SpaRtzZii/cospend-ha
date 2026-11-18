@@ -120,5 +120,197 @@
         "name": "Mode de paiement : {payment_mode}"
       }
     }
+  },
+  "services": {
+    "add_bill": {
+      "name": "Ajouter une dépense",
+      "description": "Enregistre une nouvelle dépense dans un projet Cospend. Une répartition personnalisée (montants ou pourcentages) crée une dépense par participant, comme l'application Cowspent.",
+      "fields": {
+        "project": {
+          "name": "Projet",
+          "description": "Identifiant ou nom du projet."
+        },
+        "title": {
+          "name": "Titre",
+          "description": "Objet de la dépense."
+        },
+        "amount": {
+          "name": "Montant",
+          "description": "Un nombre ou un calcul, par exemple 12,5 + 7."
+        },
+        "payer": {
+          "name": "Payeur",
+          "description": "Nom ou identifiant du membre."
+        },
+        "owers": {
+          "name": "Participants",
+          "description": "Membres qui partagent la dépense. Tous les membres actifs si vide."
+        },
+        "split_mode": {
+          "name": "Répartition",
+          "description": "Égale, par montants ou par pourcentages."
+        },
+        "shares": {
+          "name": "Parts",
+          "description": "Montant ou pourcentage par membre, par exemple Alice 60 et Bob 40. Obligatoire sauf pour une répartition égale."
+        },
+        "category": {
+          "name": "Catégorie",
+          "description": "Nom ou identifiant de la catégorie."
+        },
+        "payment_mode": {
+          "name": "Mode de paiement",
+          "description": "Nom ou identifiant du mode de paiement."
+        },
+        "date": {
+          "name": "Date",
+          "description": "Date de la dépense. Aujourd'hui, maintenant, si vide."
+        },
+        "comment": {
+          "name": "Commentaire",
+          "description": "Texte libre."
+        },
+        "currency": {
+          "name": "Devise",
+          "description": "Code de la devise étrangère. Le montant est converti avec le taux de change."
+        },
+        "exchange_rate": {
+          "name": "Taux de change",
+          "description": "Valeur d'une unité de la devise étrangère dans la devise du projet. Repris du projet si vide."
+        },
+        "repeat": {
+          "name": "Répétition",
+          "description": "Récurrence de la dépense."
+        },
+        "repeat_frequency": {
+          "name": "Répéter tous les",
+          "description": "Nombre de périodes entre deux occurrences."
+        },
+        "repeat_until": {
+          "name": "Répéter jusqu'au",
+          "description": "Dernier jour de la récurrence."
+        },
+        "repeat_all_active": {
+          "name": "Tous les membres actifs",
+          "description": "Inclure dans la récurrence les membres ajoutés plus tard."
+        }
+      }
+    },
+    "update_bill": {
+      "name": "Modifier une dépense",
+      "description": "Change certains champs d'une dépense existante. Seuls les champs fournis sont modifiés. Le montant et les participants d'une dépense à répartition personnalisée ne sont pas modifiables.",
+      "fields": {
+        "project": {
+          "name": "Projet",
+          "description": "Identifiant ou nom du projet."
+        },
+        "bill_id": {
+          "name": "Identifiant de la dépense",
+          "description": "Identifiant de la dépense (ou de n'importe laquelle d'un groupe à répartition personnalisée)."
+        },
+        "title": {
+          "name": "Titre",
+          "description": "Nouveau titre."
+        },
+        "amount": {
+          "name": "Montant",
+          "description": "Nouveau montant (nombre ou calcul)."
+        },
+        "payer": {
+          "name": "Payeur",
+          "description": "Nouveau payeur."
+        },
+        "owers": {
+          "name": "Participants",
+          "description": "Nouveaux participants."
+        },
+        "category": {
+          "name": "Catégorie",
+          "description": "Nouvelle catégorie."
+        },
+        "payment_mode": {
+          "name": "Mode de paiement",
+          "description": "Nouveau mode de paiement."
+        },
+        "date": {
+          "name": "Date",
+          "description": "Nouvelle date."
+        },
+        "comment": {
+          "name": "Commentaire",
+          "description": "Nouveau commentaire."
+        }
+      }
+    },
+    "delete_bill": {
+      "name": "Supprimer une dépense",
+      "description": "Met une dépense à la corbeille de Cospend. Supprimer une dépense à répartition personnalisée supprime toutes ses parts.",
+      "fields": {
+        "project": {
+          "name": "Projet",
+          "description": "Identifiant ou nom du projet."
+        },
+        "bill_id": {
+          "name": "Identifiant de la dépense",
+          "description": "Identifiant de la dépense."
+        },
+        "whole_group": {
+          "name": "Tout le groupe",
+          "description": "Supprimer toutes les parts d'une dépense à répartition personnalisée (sinon seulement celle indiquée)."
+        }
+      }
+    }
+  },
+  "selector": {
+    "split_mode": {
+      "options": {
+        "even": "Égale",
+        "amounts": "Montants",
+        "percent": "Pourcentages"
+      }
+    },
+    "repeat": {
+      "options": {
+        "n": "Jamais",
+        "d": "Chaque jour",
+        "w": "Chaque semaine",
+        "b": "Toutes les deux semaines",
+        "s": "Deux fois par mois",
+        "m": "Chaque mois",
+        "y": "Chaque année"
+      }
+    }
+  },
+  "exceptions": {
+    "project_not_found": {
+      "message": "Le projet Cospend « {project} » n'est pas parmi les projets configurés."
+    },
+    "project_ambiguous": {
+      "message": "Plusieurs projets configurés correspondent à « {project} ». Utilise l'identifiant du projet."
+    },
+    "project_archived": {
+      "message": "Le projet « {project} » est archivé et ne peut pas être modifié."
+    },
+    "project_read_only": {
+      "message": "Ton compte ne peut pas modifier le projet « {project} »."
+    },
+    "invalid_value": {
+      "message": "{error}"
+    },
+    "bill_not_found": {
+      "message": "{error}"
+    },
+    "partial_write": {
+      "message": "L'opération s'est arrêtée en cours de route. Déjà fait : dépenses {done}. Rien n'a été annulé ni rejoué. Erreur : {error}"
+    },
+    "auth_failed": {
+      "message": "Cospend a refusé les identifiants. Authentifie à nouveau l'intégration."
+    },
+    "forbidden": {
+      "message": "Cospend a refusé l'opération : droits insuffisants sur ce projet."
+    },
+    "request_failed": {
+      "message": "Échec de la requête Cospend : {error}"
+    }
   }
 }
