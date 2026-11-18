@@ -2,6 +2,7 @@
 
 from .client import CospendClient
 from .const import MIN_COSPEND_VERSION
+from .currency import ForeignAmount, join_comment, split_comment
 from .exceptions import (
     CospendAuthenticationError,
     CospendBadRequestError,
@@ -15,6 +16,8 @@ from .exceptions import (
     CospendSSLError,
     CospendVersionError,
 )
+from .expression import ExpressionError, parse_amount
+from .grouping import GroupedBill, find_group, group_bills
 from .models import (
     Bill,
     BillsPage,
@@ -31,12 +34,45 @@ from .models import (
     Share,
     Transaction,
 )
+from .splits import SplitError, SplitMode, SplitPart, compute_split
 from .sync import BillChanges, ProjectBills
 from .utils import compare_versions, format_amount, normalize_url, parse_version
+from .writer import (
+    PartialWriteError,
+    ResolutionError,
+    add_bill,
+    delete_bill,
+    resolve_category,
+    resolve_member,
+    resolve_owers,
+    resolve_payment_mode,
+    update_bill,
+)
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 
 __all__ = [
+    "ExpressionError",
+    "ForeignAmount",
+    "GroupedBill",
+    "PartialWriteError",
+    "ResolutionError",
+    "SplitError",
+    "SplitMode",
+    "SplitPart",
+    "add_bill",
+    "compute_split",
+    "delete_bill",
+    "find_group",
+    "group_bills",
+    "join_comment",
+    "parse_amount",
+    "resolve_category",
+    "resolve_member",
+    "resolve_owers",
+    "resolve_payment_mode",
+    "split_comment",
+    "update_bill",
     "MIN_COSPEND_VERSION",
     "Bill",
     "BillChanges",

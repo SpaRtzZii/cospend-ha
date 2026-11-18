@@ -12,7 +12,7 @@ from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
-from aiocospend import Bill, BillsPage, Project, ProjectStatistics, ServerInfo
+from aiocospend import Bill, BillsPage, Ower, Project, ProjectStatistics, ServerInfo
 
 FIXTURES = Path(__file__).resolve().parents[2] / "lib" / "aiocospend" / "tests" / "fixtures"
 
@@ -33,6 +33,8 @@ class FakeClient:
         self.clock = 1_794_780_000
         self.error: Exception | None = None
         self.statistics_calls = 0
+        self.calls: list[tuple[str, tuple, dict]] = []
+        self.write_error: Exception | None = None
 
     def _check(self) -> None:
         if self.error is not None:
@@ -78,9 +80,58 @@ class FakeClient:
         self.statistics_calls += 1
         return self.statistics
 
+    # --------------------------------------------------------- écritures du client
+
+    def _record_write(self, name: str, args: tuple, kwargs: dict) -> None:
+        if self.write_error is not None:
+            raise self.write_error
+        self.calls.append((name, args, kwargs))
+        self.clock += 10
+
+    def _owers(self, ids) -> tuple[Ower, ...]:
+        return tuple(
+            Ower(m.id, m.weight, m.name, m.activated) for m in self.project.members if m.id in ids
+        )
+
+    async def create_bill(self, project_id: str, **kwargs: Any) -> int:
+        self._record_write("create_bill", (project_id,), kwargs)
+        template = next(iter(self.bills.values()))
+        bill_id = max(max(self.bills, default=0), 99) + 1
+        self.bills[bill_id] = replace(
+            template,
+            id=bill_id,
+            what=kwargs["what"],
+            amount=float(kwargs["amount"]),
+            comment=kwargs.get("comment", ""),
+            timestamp=kwargs["timestamp"],
+            date=kwargs["date"],
+            payer_id=kwargs["payer_id"],
+            owers=self._owers(kwargs["payed_for"]),
+            category_id=kwargs.get("category_id", 0),
+            payment_mode_id=kwargs.get("payment_mode_id", 0),
+            payment_mode=kwargs.get("payment_mode", "n"),
+            last_changed=self.clock,
+        )
+        return bill_id
+
+    async def update_bill(self, project_id: str, bill_id: int, **kwargs: Any) -> int:
+        self._record_write("update_bill", (project_id, bill_id), kwargs)
+        bill = self.bills[bill_id]
+        changes = {k: v for k, v in kwargs.items() if v is not None and k != "payed_for"}
+        if "amount" in changes:
+            changes["amount"] = float(changes["amount"])
+        if kwargs.get("payed_for") is not None:
+            changes["owers"] = self._owers(kwargs["payed_for"])
+        self.bills[bill_id] = replace(bill, last_changed=self.clock, **changes)
+        return bill_id
+
+    async def delete_bill(self, project_id: str, bill_id: int, **kwargs: Any) -> None:
+        self._record_write("delete_bill", (project_id, bill_id), kwargs)
+        del self.bills[bill_id]
+
     # ------------------------------------------------------------ scénarios de test
 
-    def add_bill(self, bill_id: int, **changes: Any) -> Bill:
+    def simulate_add(self, bill_id: int, **changes: Any) -> Bill:
         self.clock += 10
         template = next(iter(self.bills.values()))
         bill = replace(
@@ -89,12 +140,12 @@ class FakeClient:
         self.bills[bill_id] = bill
         return bill
 
-    def update_bill(self, bill_id: int, **changes: Any) -> Bill:
+    def simulate_update(self, bill_id: int, **changes: Any) -> Bill:
         self.clock += 10
         bill = replace(self.bills[bill_id], last_changed=self.clock, **changes)
         self.bills[bill_id] = bill
         return bill
 
-    def delete_bill(self, bill_id: int) -> None:
+    def simulate_delete(self, bill_id: int) -> None:
         self.clock += 10
         del self.bills[bill_id]

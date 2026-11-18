@@ -8,6 +8,7 @@ import pytest
 from freezegun.api import FrozenDateTimeFactory
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity_registry import RegistryEntryDisabler
 from pytest_homeassistant_custom_component.common import async_capture_events
@@ -111,7 +112,7 @@ async def test_no_event_on_first_read_then_events_on_changes(
     assert not (added or updated or deleted)  # la première lecture sert de point de départ
 
     coordinator = mock_config_entry.runtime_data
-    fake_client.add_bill(100, what="Restaurant", amount=42.5, payer_id=UTIL1)
+    fake_client.simulate_add(100, what="Restaurant", amount=42.5, payer_id=UTIL1)
     await coordinator.async_refresh()
     await hass.async_block_till_done()
     assert len(added) == 1
@@ -120,12 +121,12 @@ async def test_no_event_on_first_read_then_events_on_changes(
     assert added[0].data["project_id"] == PROJECT
     assert added[0].data["payer_name"] == "util1"
 
-    fake_client.update_bill(100, amount=45.0)
+    fake_client.simulate_update(100, amount=45.0)
     await coordinator.async_refresh()
     await hass.async_block_till_done()
     assert [e.data["amount"] for e in updated] == [45.0]
 
-    fake_client.delete_bill(100)
+    fake_client.simulate_delete(100)
     await coordinator.async_refresh()
     await hass.async_block_till_done()
     assert [e.data["bill_id"] for e in deleted] == [100]
@@ -136,7 +137,7 @@ async def test_new_bill_updates_sensors(
     hass: HomeAssistant, init_integration, fake_client: FakeClient
 ) -> None:
     entry = init_integration
-    fake_client.add_bill(101, what="Cinéma", amount=18)
+    fake_client.simulate_add(101, what="Cinéma", amount=18)
     await entry.runtime_data.async_refresh()
     await hass.async_block_till_done()
     assert _state(hass, entry, "bills_count").state == "7"
@@ -174,6 +175,17 @@ async def test_connection_failure_is_retried(
         await hass.config_entries.async_setup(mock_config_entry.entry_id)
         await hass.async_block_till_done()
     assert mock_config_entry.state is ConfigEntryState.SETUP_RETRY
+
+
+async def test_device_shows_the_project_name(hass: HomeAssistant, init_integration) -> None:
+    """Le nom du projet (et non « Project ») s'affiche sous la fiche de l'appareil."""
+    entry = init_integration
+    device = dr.async_get(hass).async_get_device(
+        identifiers={(DOMAIN, f"{entry.entry_id}_{PROJECT}")}
+    )
+    assert device is not None
+    assert device.name == PROJECT
+    assert device.model == PROJECT
 
 
 async def test_unload(hass: HomeAssistant, init_integration) -> None:

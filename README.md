@@ -4,10 +4,9 @@ Home Assistant integration and Lovelace card for [Nextcloud Cospend](https://git
 the shared budget manager. The goal is the same experience as the Android app
 [Cowspent](https://github.com/helcel-net/cowspent), inside your dashboards and automations.
 
-> **Status: under development (milestone M1).** Nothing is usable in Home Assistant yet: the
-> repository contains the project skeleton, the CI, a throwaway test server and the Cospend client
-> library (`aiocospend`). Do not install it in a
-> production Home Assistant.
+> **Status: under development (milestone M3).** The integration reads your projects (sensors,
+> events) and provides services to add, update and delete expenses. The Lovelace card and the
+> offline queue are not available yet. Do not rely on it in a production Home Assistant.
 
 ## Planned features
 
@@ -18,6 +17,31 @@ the shared budget manager. The goal is the same experience as the Android app
 - **Lovelace card** — the same screens as Cowspent: expenses, splits (even, custom, percent),
   currencies, search, statistics, settlement plan.
 - **Scope** — Nextcloud Cospend servers only (Cospend ≥ 1.6.1). IHateMoney is not supported.
+
+## Services
+
+| Service | What it does |
+| --- | --- |
+| `cospend.add_bill` | Add an expense. `amount` can be a calculation (`12,5 + 7`). `split_mode`: `even` (one bill), `amounts` or `percent` (one bill per participant, like Cowspent, with `shares`). Optional `currency` + `exchange_rate`, `category`, `payment_mode`, `date`, `comment`, `repeat`. |
+| `cospend.update_bill` | Change some fields of a bill. The amount and participants of a custom-split bill cannot be changed (delete and recreate it). |
+| `cospend.delete_bill` | Move a bill to the Cospend trash (the whole custom-split group by default). |
+
+Members, categories and payment modes can be given by name or identifier. Each service returns
+the identifiers of the affected bills. A multi-bill operation that fails halfway is never retried
+or rolled back: the error lists what was already done.
+
+```yaml
+action: cospend.add_bill
+data:
+  project: vacances
+  title: Courses
+  amount: "12,5 + 7"
+  payer: Alice
+  split_mode: percent
+  owers: [Alice, Bob]
+  shares: { Alice: 60, Bob: 40 }
+response_variable: result
+```
 
 ## Repository layout
 
@@ -64,8 +88,7 @@ GPL-3.0 — see [`LICENSE`](LICENSE) and [`NOTICE.md`](NOTICE.md).
 Intégration Home Assistant et carte Lovelace pour [Nextcloud Cospend](https://github.com/julien-nc/cospend-nc),
 avec les mêmes fonctionnalités que l'application Android [Cowspent](https://github.com/helcel-net/cowspent).
 
-**État : en développement (jalon M0).** Le dépôt ne contient pour l'instant que le squelette du projet,
-l'intégration continue, un serveur de test jetable et la bibliothèque client `aiocospend` ; ne l'installez pas sur un Home Assistant de production.
+**État : en développement (jalon M3).** L'intégration lit vos projets (capteurs, événements) et fournit les services `cospend.add_bill`, `cospend.update_bill` et `cospend.delete_bill`. La carte Lovelace et la file d'attente hors ligne ne sont pas encore disponibles.
 
 Prévu : choix des projets à connecter, services pour créer / modifier / supprimer des dépenses depuis
 les automatisations, mode hors ligne (file d'attente sans doublons), carte Lovelace complète.

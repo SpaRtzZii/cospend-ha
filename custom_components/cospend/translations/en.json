@@ -120,5 +120,197 @@
         "name": "Payment mode: {payment_mode}"
       }
     }
+  },
+  "services": {
+    "add_bill": {
+      "name": "Add a bill",
+      "description": "Records a new expense in a Cospend project. A custom split (amounts or percentages) creates one bill per participant, like the Cowspent app.",
+      "fields": {
+        "project": {
+          "name": "Project",
+          "description": "Project identifier or name."
+        },
+        "title": {
+          "name": "Title",
+          "description": "What the expense is for."
+        },
+        "amount": {
+          "name": "Amount",
+          "description": "A number or a calculation such as 12,5 + 7."
+        },
+        "payer": {
+          "name": "Payer",
+          "description": "Member name or identifier."
+        },
+        "owers": {
+          "name": "Participants",
+          "description": "Members who share the expense. All active members when empty."
+        },
+        "split_mode": {
+          "name": "Split",
+          "description": "Even split, fixed amounts or percentages."
+        },
+        "shares": {
+          "name": "Shares",
+          "description": "Amount or percentage per member, e.g. Alice 60 and Bob 40. Required unless the split is even."
+        },
+        "category": {
+          "name": "Category",
+          "description": "Category name or identifier."
+        },
+        "payment_mode": {
+          "name": "Payment mode",
+          "description": "Payment mode name or identifier."
+        },
+        "date": {
+          "name": "Date",
+          "description": "Date of the expense. Today, now, when empty."
+        },
+        "comment": {
+          "name": "Comment",
+          "description": "Free text."
+        },
+        "currency": {
+          "name": "Currency",
+          "description": "Foreign currency code. The amount is converted with the exchange rate."
+        },
+        "exchange_rate": {
+          "name": "Exchange rate",
+          "description": "Value of one unit of the foreign currency in the project currency. Taken from the project when empty."
+        },
+        "repeat": {
+          "name": "Repeat",
+          "description": "Recurrence of the expense."
+        },
+        "repeat_frequency": {
+          "name": "Repeat every",
+          "description": "Number of periods between two occurrences."
+        },
+        "repeat_until": {
+          "name": "Repeat until",
+          "description": "Last day of the recurrence."
+        },
+        "repeat_all_active": {
+          "name": "All active members",
+          "description": "Include the members added later in the recurrence."
+        }
+      }
+    },
+    "update_bill": {
+      "name": "Update a bill",
+      "description": "Changes some fields of an existing bill. Only the fields you provide are changed. The amount and participants of a custom-split bill cannot be changed.",
+      "fields": {
+        "project": {
+          "name": "Project",
+          "description": "Project identifier or name."
+        },
+        "bill_id": {
+          "name": "Bill identifier",
+          "description": "Identifier of the bill (or of any bill of a custom-split group)."
+        },
+        "title": {
+          "name": "Title",
+          "description": "New title."
+        },
+        "amount": {
+          "name": "Amount",
+          "description": "New amount (number or calculation)."
+        },
+        "payer": {
+          "name": "Payer",
+          "description": "New payer."
+        },
+        "owers": {
+          "name": "Participants",
+          "description": "New participants."
+        },
+        "category": {
+          "name": "Category",
+          "description": "New category."
+        },
+        "payment_mode": {
+          "name": "Payment mode",
+          "description": "New payment mode."
+        },
+        "date": {
+          "name": "Date",
+          "description": "New date."
+        },
+        "comment": {
+          "name": "Comment",
+          "description": "New comment."
+        }
+      }
+    },
+    "delete_bill": {
+      "name": "Delete a bill",
+      "description": "Moves a bill to the Cospend trash. Deleting a custom-split bill removes all its parts.",
+      "fields": {
+        "project": {
+          "name": "Project",
+          "description": "Project identifier or name."
+        },
+        "bill_id": {
+          "name": "Bill identifier",
+          "description": "Identifier of the bill."
+        },
+        "whole_group": {
+          "name": "Whole group",
+          "description": "Delete every part of a custom-split bill (otherwise only the given one)."
+        }
+      }
+    }
+  },
+  "selector": {
+    "split_mode": {
+      "options": {
+        "even": "Even",
+        "amounts": "Amounts",
+        "percent": "Percentages"
+      }
+    },
+    "repeat": {
+      "options": {
+        "n": "Never",
+        "d": "Daily",
+        "w": "Weekly",
+        "b": "Every two weeks",
+        "s": "Twice a month",
+        "m": "Monthly",
+        "y": "Yearly"
+      }
+    }
+  },
+  "exceptions": {
+    "project_not_found": {
+      "message": "Cospend project “{project}” was not found among the configured projects."
+    },
+    "project_ambiguous": {
+      "message": "Several configured projects match “{project}”. Use the project identifier."
+    },
+    "project_archived": {
+      "message": "Project “{project}” is archived and cannot be modified."
+    },
+    "project_read_only": {
+      "message": "Your account cannot modify project “{project}”."
+    },
+    "invalid_value": {
+      "message": "{error}"
+    },
+    "bill_not_found": {
+      "message": "{error}"
+    },
+    "partial_write": {
+      "message": "The operation stopped halfway. Already done: bills {done}. Nothing was undone or retried. Error: {error}"
+    },
+    "auth_failed": {
+      "message": "Cospend rejected the credentials. Re-authenticate the integration."
+    },
+    "forbidden": {
+      "message": "Cospend refused the operation: insufficient permissions on this project."
+    },
+    "request_failed": {
+      "message": "Cospend request failed: {error}"
+    }
   }
 }
