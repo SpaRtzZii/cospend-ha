@@ -30,20 +30,34 @@ from aiocospend import (
     ResolutionError,
     SplitError,
     SplitMode,
-    add_bill,
-    delete_bill,
-    update_bill,
+    execute_creates,
+    execute_deletes,
+    execute_updates,
+    is_transient,
+    plan_add_bill,
+    plan_delete_bill,
+    plan_update_bill,
 )
 from aiocospend.const import REPEAT_CODES
 
 from .const import DOMAIN
 from .coordinator import CospendCoordinator, ProjectData
+from .queue import (
+    KIND_ADD,
+    KIND_DELETE,
+    KIND_UPDATE,
+    STATUS_BLOCKED,
+    QueuedOperation,
+    async_flush,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
 SERVICE_ADD_BILL = "add_bill"
 SERVICE_UPDATE_BILL = "update_bill"
 SERVICE_DELETE_BILL = "delete_bill"
+SERVICE_RETRY_QUEUED = "retry_queued"
+SERVICE_DISCARD_QUEUED = "discard_queued"
 
 ATTR_PROJECT = "project"
 ATTR_BILL_ID = "bill_id"
@@ -64,6 +78,8 @@ ATTR_REPEAT_FREQUENCY = "repeat_frequency"
 ATTR_REPEAT_UNTIL = "repeat_until"
 ATTR_REPEAT_ALL_ACTIVE = "repeat_all_active"
 ATTR_WHOLE_GROUP = "whole_group"
+ATTR_OPERATION_ID = "operation_id"
+ATTR_FORCE = "force"
 
 _REF = vol.All(vol.Any(cv.string, int), vol.Coerce(str))
 _NUMBER = vol.All(vol.Any(cv.string, int, float), vol.Coerce(str))
@@ -135,6 +151,15 @@ _UPDATE_SCHEMA = vol.Schema(
     }
 )
 
+_RETRY_SCHEMA = vol.Schema(
+    {
+        vol.Optional(ATTR_OPERATION_ID): cv.string,
+        vol.Optional(ATTR_FORCE, default=False): cv.boolean,
+    }
+)
+
+_DISCARD_SCHEMA = vol.Schema({vol.Required(ATTR_OPERATION_ID): cv.string})
+
 _DELETE_SCHEMA = vol.Schema(
     {
         vol.Required(ATTR_PROJECT): _REF,
@@ -180,19 +205,82 @@ def _check_writable(data: ProjectData) -> None:
         raise _error("project_read_only", project=data.project.name)
 
 
-async def _run(
-    hass: HomeAssistant,
-    coordinator: CospendCoordinator,
-    action: Callable[[], Awaitable[list[int]]],
-) -> list[int]:
-    """Exécute l'écriture, traduit les erreurs, puis relit le projet (événements compris)."""
+def _plan(build: Callable[[], Any]) -> Any:
+    """Calcule un plan (sans réseau) en traduisant les erreurs de saisie."""
     try:
-        return await action()
-    except (ResolutionError, SplitError, ExpressionError, ValueError) as err:
-        raise _error("invalid_value", error=err) from err
+        return build()
     except CospendNotFoundError as err:
         raise _error("bill_not_found", error=err) from err
+    except (ResolutionError, SplitError, ExpressionError, ValueError) as err:
+        raise _error("invalid_value", error=err) from err
+
+
+def _response(
+    project_id: str, bill_ids: list[int], op: QueuedOperation | None = None
+) -> ServiceResponse:
+    return {
+        "project": project_id,
+        "bill_ids": bill_ids,
+        "queued": op is not None,
+        "operation_id": op.id if op else None,
+    }
+
+
+async def _translate(
+    hass: HomeAssistant, coordinator: CospendCoordinator, err: Exception
+) -> HomeAssistantError:
+    """Erreur de Cospend non passagère, traduite pour l'utilisateur."""
+    if isinstance(err, CospendNotFoundError):
+        return _error("bill_not_found", error=err)
+    if isinstance(err, CospendAuthenticationError):
+        coordinator.config_entry.async_start_reauth(hass)
+        return HomeAssistantError(translation_domain=DOMAIN, translation_key="auth_failed")
+    if isinstance(err, CospendForbiddenError):
+        return HomeAssistantError(translation_domain=DOMAIN, translation_key="forbidden")
+    if isinstance(err, CospendError):
+        return HomeAssistantError(
+            translation_domain=DOMAIN,
+            translation_key="request_failed",
+            translation_placeholders={"error": str(err)},
+        )
+    return HomeAssistantError(
+        translation_domain=DOMAIN,
+        translation_key="request_failed",
+        translation_placeholders={"error": str(err)},
+    )
+
+
+async def _perform(
+    hass: HomeAssistant,
+    coordinator: CospendCoordinator,
+    project_id: str,
+    *,
+    kind: str,
+    title: str,
+    plan: list[Any],
+    base: dict[str, int | None] | None,
+    execute: Callable[[list[Any]], Awaitable[list[int]]],
+) -> ServiceResponse:
+    """Exécute un plan, ou le met en file d'attente si Cospend est injoignable."""
+    queue = coordinator.queue
+
+    async def enqueue(done: list[int], ambiguous: bool) -> ServiceResponse:
+        op = QueuedOperation.new(
+            kind, project_id, title, plan, base=base, done=done, ambiguous=ambiguous
+        )
+        await queue.async_enqueue(op)
+        return _response(project_id, list(done), op)
+
+    # Ordre conservé : rien ne passe devant une opération déjà en attente, et inutile
+    # d'attendre un délai dépassé quand la dernière lecture a déjà échoué.
+    if queue.for_project(project_id) or not coordinator.last_update_success:
+        return await enqueue([], ambiguous=False)
+
+    try:
+        ids = await execute(plan)
     except PartialWriteError as err:
+        if is_transient(err.cause):
+            return await enqueue(list(err.done), ambiguous=True)
         await coordinator.async_refresh()
         raise HomeAssistantError(
             translation_domain=DOMAIN,
@@ -202,21 +290,12 @@ async def _run(
                 "error": str(err.cause),
             },
         ) from err
-    except CospendAuthenticationError as err:
-        coordinator.config_entry.async_start_reauth(hass)
-        raise HomeAssistantError(translation_domain=DOMAIN, translation_key="auth_failed") from err
-    except CospendForbiddenError as err:
-        raise HomeAssistantError(translation_domain=DOMAIN, translation_key="forbidden") from err
-    except CospendError as err:
-        raise HomeAssistantError(
-            translation_domain=DOMAIN,
-            translation_key="request_failed",
-            translation_placeholders={"error": str(err)},
-        ) from err
-
-
-def _response(project_id: str, bill_ids: list[int]) -> ServiceResponse:
-    return {"project": project_id, "bill_ids": bill_ids}
+    except Exception as err:  # noqa: BLE001 - traduite ci-dessous
+        if is_transient(err):
+            return await enqueue([], ambiguous=True)
+        raise await _translate(hass, coordinator, err) from err
+    await coordinator.async_refresh()
+    return _response(project_id, ids)
 
 
 async def _async_add_bill(call: ServiceCall) -> ServiceResponse:
@@ -226,11 +305,8 @@ async def _async_add_bill(call: ServiceCall) -> ServiceResponse:
     project = project_data.project
     when = data.get(ATTR_DATE) or dt_util.now().replace(microsecond=0)
 
-    ids = await _run(
-        hass,
-        coordinator,
-        lambda: add_bill(
-            coordinator.client,
+    plan = _plan(
+        lambda: plan_add_bill(
             project,
             what=data[ATTR_TITLE],
             amount=data[ATTR_AMOUNT],
@@ -250,24 +326,54 @@ async def _async_add_bill(call: ServiceCall) -> ServiceResponse:
             repeat_all_active=(
                 int(data[ATTR_REPEAT_ALL_ACTIVE]) if ATTR_REPEAT_ALL_ACTIVE in data else None
             ),
-        ),
+        )
     )
-    await coordinator.async_refresh()
-    return _response(project.id, ids)
+    return await _perform(
+        hass,
+        coordinator,
+        project.id,
+        kind=KIND_ADD,
+        title=data[ATTR_TITLE],
+        plan=plan,
+        base=None,
+        execute=lambda specs: execute_creates(coordinator.client, project.id, specs),
+    )
+
+
+async def _fresh_project(coordinator: CospendCoordinator, project_id: str) -> ProjectData:
+    """État le plus récent possible (l'ancien si Cospend est injoignable)."""
+    if coordinator.last_update_success:
+        await coordinator.async_refresh()
+    return coordinator.data[project_id]
+
+
+def _bases(
+    coordinator: CospendCoordinator, project_data: ProjectData, bill_ids: list[int]
+) -> dict[str, int | None]:
+    """Dernière modification de chaque dépense visée.
+
+    ``None`` quand une opération déjà en attente vise cette dépense (opérations enchaînées).
+    """
+    project_id = project_data.project.id
+    return {
+        str(bill_id): (
+            None
+            if coordinator.queue.touches_bill(project_id, bill_id)
+            else project_data.bills[bill_id].last_changed
+        )
+        for bill_id in bill_ids
+        if bill_id in project_data.bills
+    }
 
 
 async def _async_update_bill(call: ServiceCall) -> ServiceResponse:
     hass, data = call.hass, call.data
     coordinator, project_data = _find_project(hass, data[ATTR_PROJECT])
     _check_writable(project_data)
-    await coordinator.async_refresh()  # état le plus récent avant de regrouper
-    project_data = coordinator.data[project_data.project.id]
+    project_data = await _fresh_project(coordinator, project_data.project.id)
 
-    ids = await _run(
-        hass,
-        coordinator,
-        lambda: update_bill(
-            coordinator.client,
+    plan = _plan(
+        lambda: plan_update_bill(
             project_data.project,
             project_data.bills,
             data[ATTR_BILL_ID],
@@ -279,32 +385,81 @@ async def _async_update_bill(call: ServiceCall) -> ServiceResponse:
             comment=data.get(ATTR_COMMENT),
             category=data.get(ATTR_CATEGORY),
             payment_mode=data.get(ATTR_PAYMENT_MODE),
-        ),
+        )
     )
-    await coordinator.async_refresh()
-    return _response(project_data.project.id, ids)
+    project_id = project_data.project.id
+    first = project_data.bills[plan[0][0]]
+    return await _perform(
+        hass,
+        coordinator,
+        project_id,
+        kind=KIND_UPDATE,
+        title=data.get(ATTR_TITLE) or first.what,
+        plan=[[bill_id, fields] for bill_id, fields in plan],
+        base=_bases(coordinator, project_data, [bill_id for bill_id, _ in plan]),
+        execute=lambda items: execute_updates(coordinator.client, project_id, items),
+    )
 
 
 async def _async_delete_bill(call: ServiceCall) -> ServiceResponse:
     hass, data = call.hass, call.data
     coordinator, project_data = _find_project(hass, data[ATTR_PROJECT])
     _check_writable(project_data)
-    await coordinator.async_refresh()
-    project_data = coordinator.data[project_data.project.id]
+    project_data = await _fresh_project(coordinator, project_data.project.id)
 
-    ids = await _run(
+    ids = _plan(
+        lambda: plan_delete_bill(
+            project_data.bills, data[ATTR_BILL_ID], whole_group=data[ATTR_WHOLE_GROUP]
+        )
+    )
+    project_id = project_data.project.id
+    return await _perform(
         hass,
         coordinator,
-        lambda: delete_bill(
-            coordinator.client,
-            project_data.project.id,
-            project_data.bills,
-            data[ATTR_BILL_ID],
-            whole_group=data[ATTR_WHOLE_GROUP],
-        ),
+        project_id,
+        kind=KIND_DELETE,
+        title=project_data.bills[ids[0]].what,
+        plan=ids,
+        base=_bases(coordinator, project_data, ids),
+        execute=lambda items: execute_deletes(coordinator.client, project_id, items),
     )
-    await coordinator.async_refresh()
-    return _response(project_data.project.id, ids)
+
+
+def _queues(hass: HomeAssistant) -> list[CospendCoordinator]:
+    return [
+        entry.runtime_data
+        for entry in hass.config_entries.async_entries(DOMAIN)
+        if entry.state is ConfigEntryState.LOADED
+    ]
+
+
+async def _async_retry_queued(call: ServiceCall) -> ServiceResponse:
+    """Remet des opérations bloquées en attente (avec ``force``, sans contrôle de conflit)."""
+    operation_id = call.data.get(ATTR_OPERATION_ID)
+    force = call.data[ATTR_FORCE]
+    retried: list[str] = []
+    for coordinator in _queues(call.hass):
+        for op in list(coordinator.queue.operations):
+            if op.status != STATUS_BLOCKED or operation_id not in (None, op.id):
+                continue
+            await coordinator.queue.async_retry(op, force=force)
+            retried.append(op.id)
+    if operation_id and not retried:
+        raise _error("operation_not_found", operation=operation_id)
+    for coordinator in _queues(call.hass):
+        await async_flush(coordinator)
+    return {"retried": retried}
+
+
+async def _async_discard_queued(call: ServiceCall) -> ServiceResponse:
+    """Abandonne une opération en attente ou bloquée (rien n'est annulé sur Cospend)."""
+    operation_id = call.data[ATTR_OPERATION_ID]
+    for coordinator in _queues(call.hass):
+        op = coordinator.queue.get(operation_id)
+        if op is not None:
+            await coordinator.queue.async_discard(op)
+            return {"discarded": op.id, "bill_ids_already_done": list(op.done)}
+    raise _error("operation_not_found", operation=operation_id)
 
 
 def async_setup_services(hass: HomeAssistant) -> None:
@@ -313,6 +468,8 @@ def async_setup_services(hass: HomeAssistant) -> None:
         (SERVICE_ADD_BILL, _async_add_bill, _ADD_SCHEMA),
         (SERVICE_UPDATE_BILL, _async_update_bill, _UPDATE_SCHEMA),
         (SERVICE_DELETE_BILL, _async_delete_bill, _DELETE_SCHEMA),
+        (SERVICE_RETRY_QUEUED, _async_retry_queued, _RETRY_SCHEMA),
+        (SERVICE_DISCARD_QUEUED, _async_discard_queued, _DISCARD_SCHEMA),
     ):
         hass.services.async_register(
             DOMAIN, name, handler, schema=schema, supports_response=SupportsResponse.OPTIONAL

@@ -21,3 +21,9 @@ MAX_FULL_RESYNC_HOURS: Final = 168
 EVENT_BILL_ADDED: Final = f"{DOMAIN}_bill_added"
 EVENT_BILL_UPDATED: Final = f"{DOMAIN}_bill_updated"
 EVENT_BILL_DELETED: Final = f"{DOMAIN}_bill_deleted"
+
+EVENT_OPERATION_QUEUED: Final = f"{DOMAIN}_operation_queued"
+EVENT_OPERATION_SYNCED: Final = f"{DOMAIN}_operation_synced"
+EVENT_OPERATION_BLOCKED: Final = f"{DOMAIN}_operation_blocked"
+
+FLUSH_INTERVAL_SECONDS: Final = 60

@@ -4,6 +4,33 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 
 ## [Non publié]
 
+### Ajouté (jalon M4)
+- Mode hors ligne pour les écritures. Si Cospend est injoignable (réseau, maintenance, erreur 5xx),
+  `add_bill`, `update_bill` et `delete_bill` mettent l'opération en file d'attente persistante
+  (conservée au redémarrage) et répondent `queued: true` avec un `operation_id`. La file est
+  rejouée toutes les minutes et au démarrage, dans l'ordre, par projet : rien ne passe devant une
+  opération plus ancienne.
+- Jamais de doublon ni de suppression rejouée à l'aveugle : une création dont la réponse s'est
+  perdue est retrouvée sur le serveur (titre, seconde, payeur, montant, participants, commentaire)
+  avant d'être recréée ; une modification déjà appliquée est ignorée ; une dépense déjà absente
+  n'est pas supprimée une seconde fois ; une répartition personnalisée reprend à la part où elle
+  s'était arrêtée.
+- Les conflits ne sont jamais résolus en silence : si la dépense a été modifiée ou supprimée ailleurs
+  entre-temps, l'opération est **bloquée**, une réparation (Repairs) est créée, et
+  l'événement `cospend_operation_blocked` est émis. Les services `cospend.retry_queued`
+  (avec `force: true` pour appliquer quand même) et `cospend.discard_queued` la résolvent.
+- Capteur « Opérations en attente » par projet (nombre, détail en attributs) ; événements
+  `cospend_operation_queued`, `cospend_operation_synced` et `cospend_operation_blocked`.
+- Les erreurs de saisie, de droits ou d'authentification ne sont jamais mises en file : elles sont
+  signalées tout de suite.
+- aiocospend 0.4.0 : `plan_*` / `execute_*` (plans d'écriture sérialisables), `spec_matches_bill`,
+  `fields_applied`, `is_transient`.
+
+### Limite connue du mode hors ligne
+- Si Home Assistant démarre alors que Cospend est injoignable, l'intégration ne peut pas se
+  charger (la structure des projets est inconnue) : les services ne sont disponibles qu'après une
+  première lecture réussie. Les opérations déjà en file sont conservées et rejouées ensuite.
+
 ### Ajouté
 - Jalon M3 : services `cospend.add_bill`, `cospend.update_bill` et `cospend.delete_bill`
   (réponse : identifiants des dépenses concernées). Montant saisi comme nombre ou comme calcul
@@ -22,7 +49,7 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 ### Modifié
 - Le faux client des tests d'intégration expose maintenant l'API d'écriture ; ses anciens
   assistants de scénario s'appellent `simulate_add`, `simulate_update` et `simulate_delete`.
-- Dépendance : `aiocospend==0.3.0` (à publier sur PyPI avant la release).
+- Dépendance : `aiocospend==0.4.0` (à publier sur PyPI avant la release).
 
 ### Corrigé
 - La fiche de l'appareil affiche le nom du projet au lieu de « Project » à la fin de la configuration.

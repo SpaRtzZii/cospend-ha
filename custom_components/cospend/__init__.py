@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from datetime import datetime, timedelta
+
 from homeassistant.const import (
     CONF_PASSWORD,
     CONF_URL,
@@ -12,12 +14,14 @@ from homeassistant.const import (
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.helpers.typing import ConfigType
 
 from aiocospend import CospendClient
 
-from .const import DOMAIN
+from .const import DOMAIN, FLUSH_INTERVAL_SECONDS
 from .coordinator import CospendConfigEntry, CospendCoordinator
+from .queue import OperationQueue, async_flush
 from .services import async_setup_services
 
 PLATFORMS = [Platform.SENSOR]
@@ -41,11 +45,21 @@ async def async_setup_entry(hass: HomeAssistant, entry: CospendConfigEntry) -> b
         entry.data[CONF_PASSWORD],
     )
     coordinator = CospendCoordinator(hass, entry, client)
+    await coordinator.queue.async_load()
     await coordinator.async_config_entry_first_refresh()
     entry.runtime_data = coordinator
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     entry.async_on_unload(entry.add_update_listener(_async_reload_on_update))
+
+    async def _flush(_: datetime | None = None) -> None:
+        await async_flush(coordinator)
+
+    # Rejeu des écritures en attente : au démarrage, puis toutes les minutes.
+    entry.async_create_background_task(hass, _flush(), f"{DOMAIN} flush {entry.entry_id}")
+    entry.async_on_unload(
+        async_track_time_interval(hass, _flush, timedelta(seconds=FLUSH_INTERVAL_SECONDS))
+    )
     return True
 
 
@@ -56,3 +70,10 @@ async def async_unload_entry(hass: HomeAssistant, entry: CospendConfigEntry) -> 
 async def _async_reload_on_update(hass: HomeAssistant, entry: CospendConfigEntry) -> None:
     """Recharge l'entrée quand les options changent (projets, intervalles)."""
     await hass.config_entries.async_reload(entry.entry_id)
+
+
+async def async_remove_entry(hass: HomeAssistant, entry: CospendConfigEntry) -> None:
+    """Supprime la file d'attente enregistrée quand l'entrée est retirée."""
+    queue = OperationQueue(hass, entry.entry_id)
+    await queue.async_load()
+    await queue.async_remove_storage()
