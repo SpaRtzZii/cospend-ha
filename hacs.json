@@ -1,5 +1,6 @@
 {
   "name": "Cospend",
+  "homeassistant": "2026.11.0",
   "zip_release": true,
   "filename": "cospend.zip"
 }

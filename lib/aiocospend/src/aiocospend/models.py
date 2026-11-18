@@ -81,7 +81,7 @@ class Bill:
     category_id: int
     deleted: bool
     last_changed: int
-    project_id: str | None = None
+    project_id: str | None = field(default=None, compare=False)
 
     @property
     def ower_ids(self) -> tuple[int, ...]:
@@ -370,6 +370,14 @@ class ProjectStatistics:
     category_member: Mapping[int, Mapping[int, float]]
     payment_mode_stats: Mapping[int, float]
     raw: Mapping[str, Any] = field(repr=False, default_factory=dict)
+
+    def paid_in(self, month: str, member_id: int = 0) -> float:
+        """Montant payé sur un mois ``AAAA-MM`` (``member_id`` 0 = total du projet)."""
+        return float(self.monthly_paid.get(month, {}).get(member_id, 0.0))
+
+    def spent_in(self, month: str, member_id: int = 0) -> float:
+        """Montant dépensé (part consommée) sur un mois ``AAAA-MM`` (0 = total)."""
+        return float(self.monthly_spent.get(month, {}).get(member_id, 0.0))
 
     @classmethod
     def from_api(cls, data: Mapping[str, Any]) -> ProjectStatistics:
