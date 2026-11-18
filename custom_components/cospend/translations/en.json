@@ -1,0 +1,124 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect to Nextcloud",
+        "description": "Enter the address of your Nextcloud server and an **app password** (Settings, Security, Devices & sessions). The Cospend app must be installed.",
+        "data": {
+          "url": "Server address",
+          "username": "Username",
+          "password": "App password",
+          "verify_ssl": "Verify the SSL certificate"
+        },
+        "data_description": {
+          "url": "Address of your Nextcloud server. Include the sub-folder if Nextcloud is not at the root of the domain.",
+          "password": "Create a dedicated app password in Nextcloud; do not use your main password.",
+          "verify_ssl": "Disable only for a server with a self-signed certificate."
+        }
+      },
+      "projects": {
+        "title": "Cospend projects",
+        "description": "Choose the projects to connect to Home Assistant.",
+        "data": {
+          "projects": "Projects"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Re-authenticate",
+        "description": "The app password for {username} was refused. Enter a new app password.",
+        "data": {
+          "password": "App password"
+        }
+      },
+      "reconfigure": {
+        "title": "Reconfigure the connection",
+        "description": "Change the server address or the credentials. The account must stay the same.",
+        "data": {
+          "url": "Server address",
+          "username": "Username",
+          "password": "App password",
+          "verify_ssl": "Verify the SSL certificate"
+        },
+        "data_description": {
+          "url": "Address of your Nextcloud server. Include the sub-folder if Nextcloud is not at the root of the domain.",
+          "password": "Create a dedicated app password in Nextcloud; do not use your main password.",
+          "verify_ssl": "Disable only for a server with a self-signed certificate."
+        }
+      }
+    },
+    "error": {
+      "invalid_url": "This address is not valid.",
+      "invalid_auth": "Username or app password refused.",
+      "cannot_connect": "Cannot reach the server.",
+      "ssl_error": "The SSL certificate was refused.",
+      "unsupported_version": "Cospend 1.6.1 or newer is required, and the app must be enabled.",
+      "invalid_response": "This address does not look like a Nextcloud server with Cospend.",
+      "no_projects": "Select at least one project.",
+      "unknown": "Unexpected error."
+    },
+    "abort": {
+      "already_configured": "This account is already configured.",
+      "reauth_successful": "Authentication updated.",
+      "reconfigure_successful": "Connection updated.",
+      "wrong_account": "The new details belong to a different account.",
+      "no_projects_on_server": "This account has no Cospend project yet."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Cospend options",
+        "description": "Choose the projects to follow and how often to read them.",
+        "data": {
+          "projects": "Projects",
+          "scan_interval": "Refresh interval (minutes)",
+          "full_resync_hours": "Full resynchronization (hours)"
+        },
+        "data_description": {
+          "scan_interval": "Only bills changed since the last read are fetched at each refresh.",
+          "full_resync_hours": "Re-reads every bill from time to time to catch silent changes."
+        }
+      }
+    },
+    "error": {
+      "no_projects": "Select at least one project."
+    },
+    "abort": {
+      "cannot_connect": "Cannot reach the server."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "bills_count": {
+        "name": "Number of bills"
+      },
+      "total_spent": {
+        "name": "Total spent"
+      },
+      "month_spent": {
+        "name": "Spent this month"
+      },
+      "last_bill": {
+        "name": "Last bill"
+      },
+      "last_bill_amount": {
+        "name": "Last bill amount"
+      },
+      "member_balance": {
+        "name": "{member} balance"
+      },
+      "member_paid": {
+        "name": "Paid by {member}"
+      },
+      "member_spent": {
+        "name": "Spent by {member}"
+      },
+      "category_total": {
+        "name": "Category: {category}"
+      },
+      "payment_mode_total": {
+        "name": "Payment mode: {payment_mode}"
+      }
+    }
+  }
+}

@@ -1,0 +1,124 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connexion à Nextcloud",
+        "description": "Saisissez l'adresse de votre serveur Nextcloud et un **mot de passe d'application** (Paramètres, Sécurité, Appareils et sessions). L'application Cospend doit être installée.",
+        "data": {
+          "url": "Adresse du serveur",
+          "username": "Identifiant",
+          "password": "Mot de passe d'application",
+          "verify_ssl": "Vérifier le certificat SSL"
+        },
+        "data_description": {
+          "url": "Adresse de votre serveur Nextcloud. Ajoutez le sous-dossier si Nextcloud n'est pas à la racine du domaine.",
+          "password": "Créez un mot de passe d'application dédié dans Nextcloud ; n'utilisez pas votre mot de passe principal.",
+          "verify_ssl": "À désactiver uniquement pour un serveur au certificat auto-signé."
+        }
+      },
+      "projects": {
+        "title": "Projets Cospend",
+        "description": "Choisissez les projets à connecter à Home Assistant.",
+        "data": {
+          "projects": "Projets"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Nouvelle authentification",
+        "description": "Le mot de passe d'application de {username} a été refusé. Saisissez un nouveau mot de passe d'application.",
+        "data": {
+          "password": "Mot de passe d'application"
+        }
+      },
+      "reconfigure": {
+        "title": "Reconfigurer la connexion",
+        "description": "Modifiez l'adresse du serveur ou les identifiants. Le compte doit rester le même.",
+        "data": {
+          "url": "Adresse du serveur",
+          "username": "Identifiant",
+          "password": "Mot de passe d'application",
+          "verify_ssl": "Vérifier le certificat SSL"
+        },
+        "data_description": {
+          "url": "Adresse de votre serveur Nextcloud. Ajoutez le sous-dossier si Nextcloud n'est pas à la racine du domaine.",
+          "password": "Créez un mot de passe d'application dédié dans Nextcloud ; n'utilisez pas votre mot de passe principal.",
+          "verify_ssl": "À désactiver uniquement pour un serveur au certificat auto-signé."
+        }
+      }
+    },
+    "error": {
+      "invalid_url": "Cette adresse n'est pas valide.",
+      "invalid_auth": "Identifiant ou mot de passe d'application refusé.",
+      "cannot_connect": "Impossible de joindre le serveur.",
+      "ssl_error": "Le certificat SSL a été refusé.",
+      "unsupported_version": "Cospend 1.6.1 ou plus récent est requis, et l'application doit être activée.",
+      "invalid_response": "Cette adresse ne ressemble pas à un serveur Nextcloud avec Cospend.",
+      "no_projects": "Sélectionnez au moins un projet.",
+      "unknown": "Erreur inattendue."
+    },
+    "abort": {
+      "already_configured": "Ce compte est déjà configuré.",
+      "reauth_successful": "Authentification mise à jour.",
+      "reconfigure_successful": "Connexion mise à jour.",
+      "wrong_account": "Les nouvelles informations correspondent à un autre compte.",
+      "no_projects_on_server": "Ce compte n'a encore aucun projet Cospend."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Options de Cospend",
+        "description": "Choisissez les projets à suivre et la fréquence de lecture.",
+        "data": {
+          "projects": "Projets",
+          "scan_interval": "Intervalle d'actualisation (minutes)",
+          "full_resync_hours": "Resynchronisation complète (heures)"
+        },
+        "data_description": {
+          "scan_interval": "À chaque actualisation, seules les dépenses modifiées depuis la dernière lecture sont récupérées.",
+          "full_resync_hours": "Relit toutes les dépenses de temps en temps pour repérer les changements silencieux."
+        }
+      }
+    },
+    "error": {
+      "no_projects": "Sélectionnez au moins un projet."
+    },
+    "abort": {
+      "cannot_connect": "Impossible de joindre le serveur."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "bills_count": {
+        "name": "Nombre de dépenses"
+      },
+      "total_spent": {
+        "name": "Total dépensé"
+      },
+      "month_spent": {
+        "name": "Dépensé ce mois-ci"
+      },
+      "last_bill": {
+        "name": "Dernière dépense"
+      },
+      "last_bill_amount": {
+        "name": "Montant de la dernière dépense"
+      },
+      "member_balance": {
+        "name": "Solde de {member}"
+      },
+      "member_paid": {
+        "name": "Payé par {member}"
+      },
+      "member_spent": {
+        "name": "Dépenses de {member}"
+      },
+      "category_total": {
+        "name": "Catégorie : {category}"
+      },
+      "payment_mode_total": {
+        "name": "Mode de paiement : {payment_mode}"
+      }
+    }
+  }
+}
