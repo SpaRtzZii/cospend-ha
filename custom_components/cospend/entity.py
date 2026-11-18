@@ -23,7 +23,7 @@ class CospendEntity(CoordinatorEntity[CospendCoordinator]):
             identifiers={(DOMAIN, f"{entry_id}_{project_id}")},
             name=project.name,
             manufacturer="Nextcloud Cospend",
-            model="Project",
+            model=project.name,
             entry_type=DeviceEntryType.SERVICE,
             configuration_url=f"{coordinator.client.base_url}/apps/cospend/p/{project_id}",
         )
