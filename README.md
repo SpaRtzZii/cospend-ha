@@ -18,6 +18,20 @@ the shared budget manager. The goal is the same experience as the Android app
   currencies, search, statistics, settlement plan.
 - **Scope** — Nextcloud Cospend servers only (Cospend ≥ 1.6.1). IHateMoney is not supported.
 
+## Connecting to Nextcloud
+
+The setup asks how to reach your server:
+
+- **Web address (http or https)** — your usual Nextcloud URL, with an optional sub-folder.
+- **Local IP address and port** — for example `192.168.1.20` and `8080`, plus a "Use HTTPS"
+  switch. No domain name or reverse proxy needed. Nextcloud only answers on an address listed in
+  `trusted_domains`; if it refuses, add yours with
+  `occ config:system:set trusted_domains 2 --value=192.168.1.20`.
+
+Both choices are also offered when you reconfigure the connection, so you can switch an existing
+entry from the domain name to the local IP (and back) without losing your projects. The account must
+stay the same.
+
 ## Services
 
 | Service | What it does |
@@ -103,6 +117,8 @@ Intégration Home Assistant et carte Lovelace pour [Nextcloud Cospend](https://g
 avec les mêmes fonctionnalités que l'application Android [Cowspent](https://github.com/helcel-net/cowspent).
 
 **État : en développement (jalon M4).** L'intégration lit vos projets (capteurs, événements), fournit les services `cospend.add_bill`, `cospend.update_bill` et `cospend.delete_bill`, et met les écritures en file d'attente quand Nextcloud est injoignable (rejeu sans doublon, conflits signalés). La carte Lovelace n'est pas encore disponible.
+
+Connexion : adresse web (http / https) **ou** adresse IP locale + port, au choix, à l'installation comme à la reconfiguration. Avec une IP, ajoutez-la aux `trusted_domains` de Nextcloud (`occ config:system:set trusted_domains 2 --value=192.168.1.20`).
 
 Prévu : choix des projets à connecter, services pour créer / modifier / supprimer des dépenses depuis
 les automatisations, mode hors ligne (file d'attente sans doublons), carte Lovelace complète.
