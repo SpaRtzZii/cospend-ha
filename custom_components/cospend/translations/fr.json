@@ -3,17 +3,10 @@
     "step": {
       "user": {
         "title": "Connexion à Nextcloud",
-        "description": "Saisissez l'adresse de votre serveur Nextcloud et un **mot de passe d'application** (Paramètres, Sécurité, Appareils et sessions). L'application Cospend doit être installée.",
-        "data": {
-          "url": "Adresse du serveur",
-          "username": "Identifiant",
-          "password": "Mot de passe d'application",
-          "verify_ssl": "Vérifier le certificat SSL"
-        },
-        "data_description": {
-          "url": "Adresse de votre serveur Nextcloud. Ajoutez le sous-dossier si Nextcloud n'est pas à la racine du domaine.",
-          "password": "Créez un mot de passe d'application dédié dans Nextcloud ; n'utilisez pas votre mot de passe principal.",
-          "verify_ssl": "À désactiver uniquement pour un serveur au certificat auto-signé."
+        "description": "Comment voulez-vous joindre votre serveur Nextcloud ?",
+        "menu_options": {
+          "web": "Adresse web (http ou https)",
+          "local": "Adresse IP locale et port"
         }
       },
       "projects": {
@@ -32,7 +25,15 @@
       },
       "reconfigure": {
         "title": "Reconfigurer la connexion",
-        "description": "Modifiez l'adresse du serveur ou les identifiants. Le compte doit rester le même.",
+        "description": "Modifiez la façon de joindre Nextcloud ou les identifiants. Le compte doit rester le même.",
+        "menu_options": {
+          "reconfigure_web": "Adresse web (http ou https)",
+          "reconfigure_local": "Adresse IP locale et port"
+        }
+      },
+      "web": {
+        "title": "Adresse web",
+        "description": "Saisissez l'adresse de votre serveur Nextcloud et un **mot de passe d'application** (Paramètres, Sécurité, Appareils et sessions). L'application Cospend doit être installée.",
         "data": {
           "url": "Adresse du serveur",
           "username": "Identifiant",
@@ -44,6 +45,59 @@
           "password": "Créez un mot de passe d'application dédié dans Nextcloud ; n'utilisez pas votre mot de passe principal.",
           "verify_ssl": "À désactiver uniquement pour un serveur au certificat auto-signé."
         }
+      },
+      "local": {
+        "title": "Adresse IP locale et port",
+        "description": "Joignez Nextcloud directement sur votre réseau local, sans dépendre d'un nom de domaine ni d'un reverse proxy. Utilisez un **mot de passe d'application** (Paramètres, Sécurité, Appareils et sessions). L'adresse IP doit figurer dans les `trusted_domains` de Nextcloud.",
+        "data": {
+          "host": "Adresse IP ou nom d'hôte",
+          "port": "Port",
+          "ssl": "Utiliser HTTPS",
+          "username": "Identifiant",
+          "password": "Mot de passe d'application",
+          "verify_ssl": "Vérifier le certificat SSL"
+        },
+        "data_description": {
+          "host": "Par exemple 192.168.1.20. N'écrivez ici ni le protocole ni le port.",
+          "port": "Port de Nextcloud sur cette machine (80 en http, 443 en https, ou le port que vous avez publié).",
+          "ssl": "À cocher seulement si le serveur répond en HTTPS sur ce port.",
+          "password": "Créez un mot de passe d'application dédié dans Nextcloud ; n'utilisez pas votre mot de passe principal.",
+          "verify_ssl": "À désactiver pour un certificat auto-signé. Utilisé uniquement en HTTPS."
+        }
+      },
+      "reconfigure_web": {
+        "title": "Adresse web",
+        "description": "Modifiez la façon de joindre Nextcloud ou les identifiants. Le compte doit rester le même.",
+        "data": {
+          "url": "Adresse du serveur",
+          "username": "Identifiant",
+          "password": "Mot de passe d'application",
+          "verify_ssl": "Vérifier le certificat SSL"
+        },
+        "data_description": {
+          "url": "Adresse de votre serveur Nextcloud. Ajoutez le sous-dossier si Nextcloud n'est pas à la racine du domaine.",
+          "password": "Créez un mot de passe d'application dédié dans Nextcloud ; n'utilisez pas votre mot de passe principal.",
+          "verify_ssl": "À désactiver uniquement pour un serveur au certificat auto-signé."
+        }
+      },
+      "reconfigure_local": {
+        "title": "Adresse IP locale et port",
+        "description": "Modifiez la façon de joindre Nextcloud ou les identifiants. Le compte doit rester le même.",
+        "data": {
+          "host": "Adresse IP ou nom d'hôte",
+          "port": "Port",
+          "ssl": "Utiliser HTTPS",
+          "username": "Identifiant",
+          "password": "Mot de passe d'application",
+          "verify_ssl": "Vérifier le certificat SSL"
+        },
+        "data_description": {
+          "host": "Par exemple 192.168.1.20. N'écrivez ici ni le protocole ni le port.",
+          "port": "Port de Nextcloud sur cette machine (80 en http, 443 en https, ou le port que vous avez publié).",
+          "ssl": "À cocher seulement si le serveur répond en HTTPS sur ce port.",
+          "password": "Créez un mot de passe d'application dédié dans Nextcloud ; n'utilisez pas votre mot de passe principal.",
+          "verify_ssl": "À désactiver pour un certificat auto-signé. Utilisé uniquement en HTTPS."
+        }
       }
     },
     "error": {
@@ -54,7 +108,9 @@
       "unsupported_version": "Cospend 1.6.1 ou plus récent est requis, et l'application doit être activée.",
       "invalid_response": "Cette adresse ne ressemble pas à un serveur Nextcloud avec Cospend.",
       "no_projects": "Sélectionnez au moins un projet.",
-      "unknown": "Erreur inattendue."
+      "unknown": "Erreur inattendue.",
+      "invalid_host": "Cette adresse IP, ce nom d'hôte ou ce port n'est pas valide.",
+      "untrusted_domain": "Nextcloud a refusé cette adresse. Ajoutez-la aux trusted_domains de config.php (par exemple : occ config:system:set trusted_domains 2 --value=192.168.1.20)."
     },
     "abort": {
       "already_configured": "Ce compte est déjà configuré.",

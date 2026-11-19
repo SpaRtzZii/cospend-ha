@@ -4,6 +4,14 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 
 ## [Non publié]
 
+### Ajouté (connexion par IP locale)
+- L'assistant de configuration propose deux choix : **adresse web** (http / https) ou **adresse IP
+  locale + port** (avec une case « Utiliser HTTPS »). La reconfiguration propose les mêmes choix et
+  permet de passer du nom de domaine à l'IP, et inversement, sans perdre les projets suivis.
+- Nouvelles erreurs claires : adresse IP / port invalide, et « domaine non approuvé » (Nextcloud
+  répond 400 tant que l'adresse n'est pas dans `trusted_domains`).
+- Les entrées existantes continuent de fonctionner telles quelles.
+
 ### Ajouté (jalon M4)
 - Mode hors ligne pour les écritures. Si Cospend est injoignable (réseau, maintenance, erreur 5xx),
   `add_bill`, `update_bill` et `delete_bill` mettent l'opération en file d'attente persistante

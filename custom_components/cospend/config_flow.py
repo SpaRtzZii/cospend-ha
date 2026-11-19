@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import ipaddress
 import logging
+import re
 from collections.abc import Mapping
 from typing import Any
 from urllib.parse import urlsplit
@@ -15,8 +17,11 @@ from homeassistant.config_entries import (
     OptionsFlow,
 )
 from homeassistant.const import (
+    CONF_HOST,
     CONF_PASSWORD,
+    CONF_PORT,
     CONF_SCAN_INTERVAL,
+    CONF_SSL,
     CONF_URL,
     CONF_USERNAME,
     CONF_VERIFY_SSL,
@@ -39,6 +44,7 @@ from homeassistant.helpers.selector import (
 
 from aiocospend import (
     CospendAuthenticationError,
+    CospendBadRequestError,
     CospendClient,
     CospendConnectionError,
     CospendError,
@@ -65,18 +71,71 @@ from .const import (
 
 _LOGGER = logging.getLogger(__name__)
 
-USER_SCHEMA = vol.Schema(
+_USERNAME = TextSelector(TextSelectorConfig(type=TextSelectorType.TEXT, autocomplete="username"))
+_PASSWORD = TextSelector(
+    TextSelectorConfig(type=TextSelectorType.PASSWORD, autocomplete="current-password")
+)
+DEFAULT_LOCAL_PORT = 8080
+
+# Choix 1 : adresse web (http ou https, éventuellement derrière un reverse proxy).
+WEB_SCHEMA = vol.Schema(
     {
         vol.Required(CONF_URL): TextSelector(TextSelectorConfig(type=TextSelectorType.URL)),
-        vol.Required(CONF_USERNAME): TextSelector(
-            TextSelectorConfig(type=TextSelectorType.TEXT, autocomplete="username")
-        ),
-        vol.Required(CONF_PASSWORD): TextSelector(
-            TextSelectorConfig(type=TextSelectorType.PASSWORD, autocomplete="current-password")
-        ),
+        vol.Required(CONF_USERNAME): _USERNAME,
+        vol.Required(CONF_PASSWORD): _PASSWORD,
         vol.Required(CONF_VERIFY_SSL, default=True): BooleanSelector(),
     }
 )
+# Choix 2 : adresse IP (ou nom d'hôte) et port du réseau local.
+LOCAL_SCHEMA = vol.Schema(
+    {
+        vol.Required(CONF_HOST): TextSelector(TextSelectorConfig(type=TextSelectorType.TEXT)),
+        vol.Required(CONF_PORT, default=DEFAULT_LOCAL_PORT): NumberSelector(
+            NumberSelectorConfig(min=1, max=65535, step=1, mode=NumberSelectorMode.BOX)
+        ),
+        vol.Required(CONF_SSL, default=False): BooleanSelector(),
+        vol.Required(CONF_USERNAME): _USERNAME,
+        vol.Required(CONF_PASSWORD): _PASSWORD,
+        vol.Required(CONF_VERIFY_SSL, default=False): BooleanSelector(),
+    }
+)
+_HOSTNAME = re.compile(
+    r"^[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?(\.[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?)*$"
+)
+
+
+class InvalidHostError(ValueError):
+    """L'adresse IP ou le nom d'hôte saisi n'est pas valide."""
+
+
+def build_local_url(host: str, port: int | float, use_ssl: bool) -> str:
+    """Construit l'adresse du serveur à partir d'une IP (ou d'un nom d'hôte) et d'un port."""
+    host = host.strip().removeprefix("[").removesuffix("]")
+    try:
+        address = ipaddress.ip_address(host)
+    except ValueError:
+        if not _HOSTNAME.match(host):
+            raise InvalidHostError(host) from None
+        netloc_host = host
+    else:
+        netloc_host = f"[{address}]" if address.version == 6 else str(address)
+    port = int(port)
+    if not 1 <= port <= 65535:
+        raise InvalidHostError(str(port))
+    return normalize_url(f"{'https' if use_ssl else 'http'}://{netloc_host}:{port}")
+
+
+def _local_defaults(url: str) -> dict[str, Any]:
+    """Valeurs proposées dans le formulaire « IP + port » à partir d'une adresse enregistrée."""
+    parts = urlsplit(url)
+    use_ssl = parts.scheme == "https"
+    return {
+        CONF_HOST: parts.hostname or "",
+        CONF_PORT: parts.port or (443 if use_ssl else 80),
+        CONF_SSL: use_ssl,
+    }
+
+
 REAUTH_SCHEMA = vol.Schema(
     {
         vol.Required(CONF_PASSWORD): TextSelector(
@@ -94,6 +153,9 @@ def _error_key(err: CospendError) -> str:
         return "ssl_error"
     if isinstance(err, CospendConnectionError | CospendMaintenanceError | CospendServerError):
         return "cannot_connect"
+    if isinstance(err, CospendBadRequestError):
+        # Nextcloud répond 400 quand l'adresse n'est pas dans ``trusted_domains``.
+        return "untrusted_domain"
     if isinstance(err, CospendVersionError):
         return "unsupported_version"
     if isinstance(err, CospendResponseError):
@@ -198,14 +260,31 @@ class CospendConfigFlow(ConfigFlow, domain=DOMAIN):
         return None
 
     async def async_step_user(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        return self.async_show_menu(step_id="user", menu_options=["web", "local"])
+
+    def _read_form(self, user_input: dict[str, Any], *, local: bool) -> tuple[str, str]:
+        """Adresse normalisée et identifiant saisis ; lève ValueError si l'adresse est invalide."""
+        if local:
+            url = build_local_url(
+                user_input[CONF_HOST], user_input[CONF_PORT], user_input.get(CONF_SSL, False)
+            )
+        else:
+            url = normalize_url(user_input[CONF_URL])
+        return url, user_input[CONF_USERNAME].strip()
+
+    async def _async_connection_step(
+        self, step_id: str, user_input: dict[str, Any] | None, *, local: bool
+    ) -> ConfigFlowResult:
+        schema = LOCAL_SCHEMA if local else WEB_SCHEMA
         errors: dict[str, str] = {}
         if user_input is not None:
             try:
-                url = normalize_url(user_input[CONF_URL])
+                url, username = self._read_form(user_input, local=local)
+            except InvalidHostError:
+                errors["base"] = "invalid_host"
             except ValueError:
                 errors["base"] = "invalid_url"
             else:
-                username = user_input[CONF_USERNAME].strip()
                 password = user_input[CONF_PASSWORD]
                 verify_ssl = user_input.get(CONF_VERIFY_SSL, True)
                 if error := await self._async_validate(url, username, password, verify_ssl):
@@ -221,10 +300,16 @@ class CospendConfigFlow(ConfigFlow, domain=DOMAIN):
                     }
                     return await self.async_step_projects()
         return self.async_show_form(
-            step_id="user",
-            data_schema=self.add_suggested_values_to_schema(USER_SCHEMA, user_input),
+            step_id=step_id,
+            data_schema=self.add_suggested_values_to_schema(schema, user_input),
             errors=errors,
         )
+
+    async def async_step_web(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        return await self._async_connection_step("web", user_input, local=False)
+
+    async def async_step_local(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        return await self._async_connection_step("local", user_input, local=True)
 
     async def async_step_projects(
         self, user_input: dict[str, Any] | None = None
@@ -282,41 +367,75 @@ class CospendConfigFlow(ConfigFlow, domain=DOMAIN):
     async def async_step_reconfigure(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
+        return self.async_show_menu(
+            step_id="reconfigure", menu_options=["reconfigure_web", "reconfigure_local"]
+        )
+
+    async def _async_reconfigure_step(
+        self, step_id: str, user_input: dict[str, Any] | None, *, local: bool
+    ) -> ConfigFlowResult:
         entry = self._get_reconfigure_entry()
+        schema = LOCAL_SCHEMA if local else WEB_SCHEMA
         errors: dict[str, str] = {}
         if user_input is not None:
             try:
-                url = normalize_url(user_input[CONF_URL])
+                url, username = self._read_form(user_input, local=local)
+            except InvalidHostError:
+                errors["base"] = "invalid_host"
             except ValueError:
                 errors["base"] = "invalid_url"
             else:
-                username = user_input[CONF_USERNAME].strip()
+                # Le compte doit rester le même ; l'adresse, elle, peut changer de forme
+                # (nom de domaine, puis IP locale, et inversement).
+                if username.lower() != entry.data[CONF_USERNAME].lower():
+                    return self.async_abort(reason="wrong_account")
+                verify_ssl = user_input.get(CONF_VERIFY_SSL, True)
                 error = await self._async_validate(
-                    url,
-                    username,
-                    user_input[CONF_PASSWORD],
-                    user_input.get(CONF_VERIFY_SSL, True),
+                    url, username, user_input[CONF_PASSWORD], verify_ssl
                 )
                 if error is None:
-                    await self.async_set_unique_id(_unique_id(url, username))
-                    self._abort_if_unique_id_mismatch(reason="wrong_account")
+                    unique_id = _unique_id(url, username)
+                    if any(
+                        other.unique_id == unique_id and other.entry_id != entry.entry_id
+                        for other in self._async_current_entries(include_ignore=False)
+                    ):
+                        return self.async_abort(reason="already_configured")
                     return self.async_update_reload_and_abort(
                         entry,
+                        unique_id=unique_id,
+                        title=f"{username} @ {urlsplit(url).netloc}",
                         data_updates={
                             CONF_URL: url,
                             CONF_USERNAME: username,
                             CONF_PASSWORD: user_input[CONF_PASSWORD],
-                            CONF_VERIFY_SSL: user_input.get(CONF_VERIFY_SSL, True),
+                            CONF_VERIFY_SSL: verify_ssl,
                         },
                     )
                 errors["base"] = error
+        suggested = user_input or (
+            {**_local_defaults(entry.data[CONF_URL])} if local else {CONF_URL: entry.data[CONF_URL]}
+        )
+        if user_input is None:
+            suggested = {
+                **suggested,
+                CONF_USERNAME: entry.data[CONF_USERNAME],
+                CONF_VERIFY_SSL: entry.data.get(CONF_VERIFY_SSL, True),
+            }
         return self.async_show_form(
-            step_id="reconfigure",
-            data_schema=self.add_suggested_values_to_schema(
-                USER_SCHEMA, user_input or {**entry.data, CONF_PASSWORD: ""}
-            ),
+            step_id=step_id,
+            data_schema=self.add_suggested_values_to_schema(schema, suggested),
             errors=errors,
         )
+
+    async def async_step_reconfigure_web(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        return await self._async_reconfigure_step("reconfigure_web", user_input, local=False)
+
+    async def async_step_reconfigure_local(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        return await self._async_reconfigure_step("reconfigure_local", user_input, local=True)
 
 
 class CospendOptionsFlow(OptionsFlow):
