@@ -4,9 +4,9 @@ Home Assistant integration and Lovelace card for [Nextcloud Cospend](https://git
 the shared budget manager. The goal is the same experience as the Android app
 [Cowspent](https://github.com/helcel-net/cowspent), inside your dashboards and automations.
 
-> **Status: under development (milestone M4).** The integration reads your projects (sensors,
+> **Status: under development (milestone M5).** The integration reads your projects (sensors,
 > events), provides services to add, update and delete expenses, and queues them when Nextcloud is
-> unreachable. The Lovelace card is not available yet. Do not rely on it in a production Home Assistant.
+> unreachable. The Lovelace card shows balances, expenses, search and details (read only for now). Do not rely on it in a production Home Assistant.
 
 ## Planned features
 
@@ -31,6 +31,29 @@ The setup asks how to reach your server:
 Both choices are also offered when you reconfigure the connection, so you can switch an existing
 entry from the domain name to the local IP (and back) without losing your projects. The account must
 stay the same.
+
+## Lovelace card
+
+The integration serves its own card: nothing to add in the dashboard resources. Add a card
+**Cospend** from the card picker (the visual editor lets you choose the project and the blocks),
+or in YAML:
+
+```yaml
+type: custom:cospend-card
+project: my-project        # optional: without it, a selector lists all the projects
+title: Shared budget       # optional
+show_balances: true        # member balances
+show_bills: true           # expense list with details
+show_search: true          # search field
+page_size: 20              # expenses loaded at a time
+```
+
+The card follows your Home Assistant theme (light, dark, custom themes) and language (English and
+French). It shows the balances, the expense list (custom splits are shown as one expense), a search
+and the detail of each expense with everyone's share. It updates on its own and shows the
+operations still waiting in the offline queue. Creating and editing expenses from the card arrives
+in the next milestone. The card is built when a release is published: a copy of the repository
+without a release has the integration but no card.
 
 ## Services
 
@@ -116,9 +139,11 @@ GPL-3.0 — see [`LICENSE`](LICENSE) and [`NOTICE.md`](NOTICE.md).
 Intégration Home Assistant et carte Lovelace pour [Nextcloud Cospend](https://github.com/julien-nc/cospend-nc),
 avec les mêmes fonctionnalités que l'application Android [Cowspent](https://github.com/helcel-net/cowspent).
 
-**État : en développement (jalon M4).** L'intégration lit vos projets (capteurs, événements), fournit les services `cospend.add_bill`, `cospend.update_bill` et `cospend.delete_bill`, et met les écritures en file d'attente quand Nextcloud est injoignable (rejeu sans doublon, conflits signalés). La carte Lovelace n'est pas encore disponible.
+**État : en développement (jalon M5).** L'intégration lit vos projets (capteurs, événements), fournit les services `cospend.add_bill`, `cospend.update_bill` et `cospend.delete_bill`, et met les écritures en file d'attente quand Nextcloud est injoignable (rejeu sans doublon, conflits signalés). 
 
 Connexion : adresse web (http / https) **ou** adresse IP locale + port, au choix, à l'installation comme à la reconfiguration. Avec une IP, ajoutez-la aux `trusted_domains` de Nextcloud (`occ config:system:set trusted_domains 2 --value=192.168.1.20`).
+
+Carte Lovelace (`custom:cospend-card`) : soldes, liste des dépenses (répartitions personnalisées regroupées), recherche et détail avec la part de chacun. Elle suit le thème de Home Assistant, se met à jour toute seule et s'ajoute depuis le sélecteur de cartes (éditeur visuel inclus). La création et la modification depuis la carte arrivent au jalon suivant.
 
 Prévu : choix des projets à connecter, services pour créer / modifier / supprimer des dépenses depuis
 les automatisations, mode hors ligne (file d'attente sans doublons), carte Lovelace complète.
