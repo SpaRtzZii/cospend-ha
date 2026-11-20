@@ -1,10 +1,11 @@
 {
   "domain": "cospend",
   "name": "Cospend",
+  "after_dependencies": ["frontend"],
   "categories": ["finance"],
   "codeowners": ["@SpaRtzZii"],
   "config_flow": true,
-  "dependencies": [],
+  "dependencies": ["http", "websocket_api"],
   "documentation": "https://github.com/SpaRtzZii/cospend-ha",
   "integration_type": "service",
   "iot_class": "cloud_polling",

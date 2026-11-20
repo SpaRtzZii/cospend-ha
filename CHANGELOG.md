@@ -4,6 +4,20 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 
 ## [Non publié]
 
+### Ajouté (jalon M5 : carte Lovelace en lecture)
+- Carte `custom:cospend-card`, servie par l'intégration (aucune ressource à déclarer) et compilée
+  à la publication d'une release. Elle affiche : sélecteur de projet (archivés masqués), soldes des
+  membres en barres, liste des dépenses par date avec pagination, recherche, détail d'une dépense
+  avec la part de chacun, montant d'origine en devise étrangère, répétition, opérations en attente
+  du mode hors ligne et alerte quand Nextcloud est injoignable.
+- Thème : la carte n'utilise que les variables de thème de Home Assistant (clair, sombre,
+  thèmes personnalisés). Français et anglais.
+- Éditeur visuel : titre, projet, blocs affichés et taille de page.
+- API websocket de l'intégration (`cospend/projects`, `cospend/bills`, `cospend/bill`,
+  `cospend/subscribe`) : lecture seule, sans appel réseau vers Nextcloud, répartitions
+  personnalisées regroupées, mise à jour poussée à la carte.
+- L'intégration dépend maintenant de `http` et `websocket_api`.
+
 ### Ajouté (connexion par IP locale)
 - L'assistant de configuration propose deux choix : **adresse web** (http / https) ou **adresse IP
   locale + port** (avec une case « Utiliser HTTPS »). La reconfiguration propose les mêmes choix et

@@ -2,8 +2,12 @@
 
 from __future__ import annotations
 
+import logging
 from datetime import datetime, timedelta
+from pathlib import Path
 
+from homeassistant.components.frontend import add_extra_js_url
+from homeassistant.components.http import StaticPathConfig
 from homeassistant.const import (
     CONF_PASSWORD,
     CONF_URL,
@@ -16,6 +20,7 @@ from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.helpers.typing import ConfigType
+from homeassistant.loader import async_get_integration
 
 from aiocospend import CospendClient
 
@@ -23,8 +28,13 @@ from .const import DOMAIN, FLUSH_INTERVAL_SECONDS
 from .coordinator import CospendConfigEntry, CospendCoordinator
 from .queue import OperationQueue, async_flush
 from .services import async_setup_services
+from .websocket import async_setup_websocket
+
+_LOGGER = logging.getLogger(__name__)
 
 PLATFORMS = [Platform.SENSOR]
+CARD_URL = f"/{DOMAIN}_static/cospend-card.js"
+CARD_FILE = Path(__file__).parent / "www" / "cospend-card.js"
 
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
@@ -32,7 +42,25 @@ CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Enregistre les services, indépendamment des entrées de configuration."""
     async_setup_services(hass)
+    async_setup_websocket(hass)
+    await _async_register_card(hass)
     return True
+
+
+async def _async_register_card(hass: HomeAssistant) -> None:
+    """Sert la carte Lovelace et la charge dans le navigateur (aucune ressource à ajouter)."""
+    if not CARD_FILE.is_file():
+        _LOGGER.debug("Carte Lovelace absente (%s) : version de développement", CARD_FILE)
+        return
+    integration = await async_get_integration(hass, DOMAIN)
+    await hass.http.async_register_static_paths(
+        [StaticPathConfig(CARD_URL, str(CARD_FILE), cache_headers=False)]
+    )
+    try:
+        add_extra_js_url(hass, f"{CARD_URL}?v={integration.version}")
+    except KeyError:
+        # Pas d'interface web (frontend absent) : l'intégration fonctionne sans la carte.
+        _LOGGER.debug("Le frontend n'est pas chargé : la carte Cospend n'est pas injectée")
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: CospendConfigEntry) -> bool:
