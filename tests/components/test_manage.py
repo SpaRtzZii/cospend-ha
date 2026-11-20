@@ -39,7 +39,7 @@ async def test_services_are_registered(hass: HomeAssistant) -> None:
 
 async def test_add_member(hass: HomeAssistant, init_integration, fake_client: FakeClient) -> None:
     response = await call(hass, "add_member", name="  Zoé ", weight=2, color="#AABBCC")
-    assert response == {"project": PROJECT, "id": 77}
+    assert response == {"project": PROJECT, "id": 77, "reactivated": False}
     ((name, args, kwargs),) = writes(fake_client)
     assert (name, args) == ("create_member", (PROJECT, "Zoé"))
     assert kwargs == {"weight": 2.0, "color": "#aabbcc", "activated": True}
@@ -158,3 +158,46 @@ async def test_server_refusal_is_translated(
     with pytest.raises(HomeAssistantError) as info:
         await call(hass, "add_member", name="Zoé")
     assert info.value.translation_key == "forbidden"
+
+
+async def test_add_member_reactivates_a_disabled_one(
+    hass: HomeAssistant, init_integration, fake_client: FakeClient
+) -> None:
+    members = fake_client.project.members
+    disabled = replace(members[0], activated=False)
+    fake_client.project = replace(fake_client.project, members=(disabled, *members[1:]))
+    await init_integration.runtime_data.async_refresh()
+    response = await call(hass, "add_member", name=members[0].name.upper(), weight=2)
+    assert response == {"project": PROJECT, "id": members[0].id, "reactivated": True}
+    ((name, args, kwargs),) = writes(fake_client)
+    assert (name, args) == ("update_member", (PROJECT, members[0].id))
+    assert kwargs == {"weight": 2.0, "color": None, "activated": True}
+
+
+async def test_add_member_refuses_an_active_name(
+    hass: HomeAssistant, init_integration, fake_client: FakeClient
+) -> None:
+    with pytest.raises(ServiceValidationError) as info:
+        await call(hass, "add_member", name="util1")
+    assert info.value.translation_key == "member_exists"
+    assert not writes(fake_client)
+
+
+async def test_data_is_refreshed_even_when_the_request_fails(
+    hass: HomeAssistant, init_integration, fake_client: FakeClient
+) -> None:
+    refreshes = 0
+    coordinator = init_integration.runtime_data
+    original = coordinator.async_refresh
+
+    async def counting() -> None:
+        nonlocal refreshes
+        refreshes += 1
+        await original()
+
+    coordinator.async_refresh = counting
+    fake_client.write_error = CospendForbiddenError("non")
+    before = refreshes
+    with pytest.raises(HomeAssistantError):
+        await call(hass, "add_member", name="Zoé")
+    assert refreshes - before >= 2  # une fois avant l'appel, une fois après l'échec

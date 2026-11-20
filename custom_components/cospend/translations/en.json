@@ -672,6 +672,9 @@
     },
     "needs_maintainer": {
       "message": "Managing the members, categories, payment modes and currencies of project \"{project}\" requires maintainer access."
+    },
+    "member_exists": {
+      "message": "An active member named \"{name}\" already exists."
     }
   },
   "issues": {

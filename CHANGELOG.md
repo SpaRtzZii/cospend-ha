@@ -4,6 +4,16 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 
 ## [Non publié]
 
+### Corrigé (M6c, d'après les essais sur serveur réel)
+- Création d'une catégorie, d'un mode de paiement ou d'une devise : erreur 404. Cospend nomme ces
+  routes au singulier (`category`, `paymentmode`, `currency`) ; la bibliothèque les essaie dans
+  cet ordre puis retente l'autre forme sur un 404. `aiocospend` 0.6.1.
+- Ajouter un membre portant le nom d'un membre désactivé le **réactive** (avec un message dédié)
+  au lieu d'échouer ; un membre actif du même nom est refusé avec un message clair.
+- Les données sont resynchronisées après chaque opération de gestion, même en cas d'erreur
+  (une requête peut avoir abouti côté Nextcloud), au lieu d'attendre le prochain rafraîchissement.
+- Les erreurs « requête refusée » (HTTP 400) reprennent le message renvoyé par Cospend.
+
 ### Ajouté (jalon M6c : gestion du projet)
 - Roue crantée dans la carte (niveau gestionnaire requis, masquée avec `allow_write: false`) :
   écran à quatre onglets pour ajouter, modifier et supprimer les **membres** (nom, poids, couleur,

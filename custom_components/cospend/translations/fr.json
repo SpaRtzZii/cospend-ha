@@ -672,6 +672,9 @@
     },
     "needs_maintainer": {
       "message": "Gérer les membres, catégories, modes de paiement et devises du projet « {project} » demande le niveau gestionnaire."
+    },
+    "member_exists": {
+      "message": "Un membre actif nommé « {name} » existe déjà."
     }
   },
   "issues": {

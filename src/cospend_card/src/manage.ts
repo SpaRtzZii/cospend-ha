@@ -79,11 +79,13 @@ class CospendManage extends LitElement {
     spec: { service: string; data: Record<string, unknown> },
     done: string,
   ): Promise<void> {
+    // le service peut répondre autrement que prévu (réactivation d'un membre désactivé)
     if (!this.hass) return;
     this._busy = true;
     this._error = "";
     try {
-      await manageProject(this.hass, spec.service, spec.data);
+      const result = await manageProject(this.hass, spec.service, spec.data);
+      if (result?.reactivated) done = "item_reactivated";
       this._item = null;
       this._deleting = null;
       this.dispatchEvent(

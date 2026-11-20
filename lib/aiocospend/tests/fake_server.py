@@ -46,6 +46,9 @@ class FakeCospend:
     clock: int = 1_794_780_000
     next_bill_id: int = 100
     next_item_id: int = 500
+    missing_segments: set[str] = field(default_factory=set)
+    item_response: Any = None
+    item_error: tuple[int, Any] | None = None
     url: str = ""
     _form: dict[str, str] = field(default_factory=dict)
 
@@ -64,7 +67,16 @@ class FakeCospend:
         self.app.router.add_get(f"{API}/projects/{{pid}}/bills/{{bid}}", self._get_bill)
         self.app.router.add_put(f"{API}/projects/{{pid}}/bills/{{bid}}", self._update_bill)
         self.app.router.add_delete(f"{API}/projects/{{pid}}/bills/{{bid}}", self._delete_bill)
-        for kind in ("members", "categories", "paymentmodes", "currencies"):
+        for kind in (
+            "members",
+            "member",
+            "categories",
+            "category",
+            "paymentmodes",
+            "paymentmode",
+            "currencies",
+            "currency",
+        ):
             self.app.router.add_post(f"{API}/projects/{{pid}}/{kind}", self._item_create)
             self.app.router.add_put(f"{API}/projects/{{pid}}/{kind}/{{iid}}", self._item_update)
             self.app.router.add_delete(f"{API}/projects/{{pid}}/{kind}/{{iid}}", self._item_delete)
@@ -143,6 +155,10 @@ class FakeCospend:
     def _check_project(self, request: web.Request) -> web.Response | None:
         if request.match_info["pid"] != self.project["id"]:
             return self._fail(404)
+        parts = request.path.split("/")
+        after = parts[parts.index(request.match_info["pid"]) + 1 :]
+        if after and after[0] in self.missing_segments:
+            return self._fail(404)  # route absente de cette version simulée
         return None
 
     async def _project(self, request: web.Request) -> web.Response:
@@ -275,8 +291,11 @@ class FakeCospend:
     async def _item_create(self, request: web.Request) -> web.Response:
         if (error := self._check_project(request)) is not None:
             return error
+        if self.item_error is not None:
+            status, data = self.item_error
+            return web.json_response({"ocs": {"meta": {}, "data": data}}, status=status)
         self.next_item_id += 1
-        return self._ok(self.next_item_id)
+        return self._ok(self.item_response if self.item_response is not None else self.next_item_id)
 
     async def _item_update(self, request: web.Request) -> web.Response:
         return self._check_project(request) or self._ok({})
