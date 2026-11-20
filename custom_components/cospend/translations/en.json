@@ -257,7 +257,7 @@
     },
     "update_bill": {
       "name": "Update a bill",
-      "description": "Changes some fields of an existing bill. Only the fields you provide are changed. The amount and participants of a custom-split bill cannot be changed. If Cospend cannot be reached, the operation is queued and sent later.",
+      "description": "Changes some fields of an existing expense. Only the fields you provide are changed. The amount, the currency and the participants of a custom-split expense cannot be changed. If Cospend is unreachable, the operation is queued and sent later.",
       "fields": {
         "project": {
           "name": "Project",
@@ -298,6 +298,30 @@
         "comment": {
           "name": "Comment",
           "description": "New comment."
+        },
+        "currency": {
+          "name": "Currency",
+          "description": "Code of the foreign currency; needs the amount, which is then the amount in that currency. Without it, the amount is in the project currency."
+        },
+        "exchange_rate": {
+          "name": "Exchange rate",
+          "description": "Value of one unit of the foreign currency in the project currency. Taken from the project when empty."
+        },
+        "repeat": {
+          "name": "Repeat",
+          "description": "New recurrence of the expense."
+        },
+        "repeat_frequency": {
+          "name": "Repeat every",
+          "description": "Number of periods between two occurrences."
+        },
+        "repeat_until": {
+          "name": "Repeat until",
+          "description": "Last day of the recurrence (AAAA-MM-JJ). Leave empty text to remove the end date."
+        },
+        "repeat_all_active": {
+          "name": "All active members",
+          "description": "Include in the recurrence the members added later."
         }
       }
     },

@@ -146,6 +146,11 @@ def _serialize_bill(
         item["shares"] = _shares(group, project)
         item["repeat_freq"] = bill.repeat_freq
         item["repeat_until"] = bill.repeat_until
+        item["repeat_all_active"] = bool(bill.repeat_all_active)
+        # Poids inégaux (créés par une autre application) : une modification les remet à égalité.
+        item["uneven_weights"] = (
+            not group.is_group and len({ower.weight for ower in bill.owers}) > 1
+        )
     return item
 
 

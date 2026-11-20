@@ -132,6 +132,8 @@ async def test_even_split_shares(
         "result"
     ]
     assert [share["amount"] for share in detail["shares"]] == [30.0, 30.0, 30.0]
+    assert detail["uneven_weights"] is False
+    assert detail["repeat_all_active"] is False
 
 
 async def test_unknown_project_and_bill(
@@ -204,3 +206,28 @@ async def test_card_registration_survives_a_missing_frontend(hass: HomeAssistant
         patch.object(integration, "add_extra_js_url", side_effect=KeyError("frontend")),
     ):
         await integration._async_register_card(hass)  # ne doit pas lever
+
+
+async def test_uneven_weights_are_reported(
+    hass: HomeAssistant, init_integration, fake_client: FakeClient, hass_ws_client
+) -> None:
+    template = next(iter(fake_client.bills.values()))
+    members = fake_client.project.members
+    fake_client.bills[310] = replace(
+        template,
+        id=310,
+        amount=90.0,
+        owers=(
+            Ower(members[0].id, 2.0, members[0].name, True),
+            Ower(members[1].id, 1.0, members[1].name, True),
+        ),
+        last_changed=fake_client.clock + 1,
+    )
+    fake_client.clock += 10
+    await init_integration.runtime_data.async_refresh()
+    client = await hass_ws_client(hass)
+    detail = (await _call(client, {"type": "cospend/bill", "project_id": "teste", "bill_id": 310}))[
+        "result"
+    ]
+    assert detail["uneven_weights"] is True
+    assert [share["amount"] for share in detail["shares"]] == [60.0, 30.0]

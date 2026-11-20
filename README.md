@@ -6,7 +6,7 @@ the shared budget manager. The goal is the same experience as the Android app
 
 > **Status: under development (milestone M5).** The integration reads your projects (sensors,
 > events), provides services to add, update and delete expenses, and queues them when Nextcloud is
-> unreachable. The Lovelace card shows balances, expenses, search and details (read only for now). Do not rely on it in a production Home Assistant.
+> unreachable. The Lovelace card shows balances, expenses, search and details . Do not rely on it in a production Home Assistant.
 
 ## Planned features
 
@@ -53,9 +53,10 @@ The card follows your Home Assistant theme (light, dark, custom themes) and lang
 French). It shows the balances, the expense list (custom splits are shown as one expense), a search
 and the detail of each expense with everyone's share. It updates on its own and shows the
 operations still waiting in the offline queue. You can add an expense (title, amount or calculation such as `12,5 + 7`, payer, participants,
-date, category, payment mode, comment; equal split) and delete one after a confirmation (it goes to
-the Nextcloud trash). Offline, the operation is queued like any service call. Editing, custom
-splits and foreign currencies from the card arrive in the next milestone. Set `allow_write: false`
+date, category, payment mode, comment), split it evenly, by amounts or by percentages, enter it in
+a foreign currency, make it repeat, edit it later and delete it after a confirmation (it goes to the
+Nextcloud trash). Offline, the operation is queued like any service call. The amount, participants
+and currency of a custom-split expense cannot be edited: delete it and create it again. Set `allow_write: false`
 for a read-only dashboard. The card is built when a release is published: a copy of the repository
 without a release has the integration but no card.
 
@@ -147,7 +148,7 @@ avec les mêmes fonctionnalités que l'application Android [Cowspent](https://gi
 
 Connexion : adresse web (http / https) **ou** adresse IP locale + port, au choix, à l'installation comme à la reconfiguration. Avec une IP, ajoutez-la aux `trusted_domains` de Nextcloud (`occ config:system:set trusted_domains 2 --value=192.168.1.20`).
 
-Carte Lovelace (`custom:cospend-card`) : soldes, liste des dépenses (répartitions personnalisées regroupées), recherche et détail avec la part de chacun. Elle suit le thème de Home Assistant, se met à jour toute seule et s'ajoute depuis le sélecteur de cartes (éditeur visuel inclus). On peut y ajouter une dépense (répartition égale) et en supprimer une après confirmation (corbeille de Nextcloud) ; hors ligne, l'opération est mise en file d'attente. `allow_write: false` rend la carte en lecture seule. La modification, les répartitions personnalisées et les devises arrivent au jalon suivant.
+Carte Lovelace (`custom:cospend-card`) : soldes, liste des dépenses (répartitions personnalisées regroupées), recherche et détail avec la part de chacun. Elle suit le thème de Home Assistant, se met à jour toute seule et s'ajoute depuis le sélecteur de cartes (éditeur visuel inclus). On peut y ajouter une dépense (répartition égale, par montants ou par pourcentages, devise étrangère, répétition), la modifier et la supprimer après confirmation (corbeille de Nextcloud) ; hors ligne, l'opération est mise en file d'attente. Le montant, les participants et la devise d'une répartition personnalisée ne se modifient pas (supprimer puis recréer). `allow_write: false` rend la carte en lecture seule.
 
 Prévu : choix des projets à connecter, services pour créer / modifier / supprimer des dépenses depuis
 les automatisations, mode hors ligne (file d'attente sans doublons), carte Lovelace complète.

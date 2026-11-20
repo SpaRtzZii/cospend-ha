@@ -53,30 +53,19 @@ async function callService(
   return result.response ?? {};
 }
 
-export interface NewBill {
-  project: string;
-  title: string;
-  amount: string;
-  payer: number;
-  owers: number[];
-  date: string;
-  category?: number;
-  payment_mode?: number;
-  comment?: string;
+/** Crée une dépense : ``data`` est déjà au format du service ``cospend.add_bill``. */
+export function addBill(hass: HassLike, data: Record<string, unknown>): Promise<WriteResult> {
+  return callService(hass, "add_bill", data);
 }
 
-/** Crée une dépense (répartition égale entre les participants). */
-export function addBill(hass: HassLike, bill: NewBill): Promise<WriteResult> {
-  const { category, payment_mode, comment, ...rest } = bill;
-  return callService(hass, "add_bill", {
-    ...rest,
-    payer: String(bill.payer),
-    owers: bill.owers.map(String),
-    split_mode: "even",
-    comment: comment ?? "",
-    ...(category ? { category: String(category) } : {}),
-    ...(payment_mode ? { payment_mode: String(payment_mode) } : {}),
-  });
+/** Modifie une dépense : seuls les champs de ``changes`` (format ``cospend.update_bill``) partent. */
+export function updateBill(
+  hass: HassLike,
+  project: string,
+  billId: number,
+  changes: Record<string, unknown>,
+): Promise<WriteResult> {
+  return callService(hass, "update_bill", { project, bill_id: billId, ...changes });
 }
 
 /** Supprime une dépense (et tout son groupe pour une répartition personnalisée). */

@@ -89,6 +89,15 @@ def test_fields_applied() -> None:
     assert fields_applied({}, bill)
 
 
+def test_fields_applied_repeat() -> None:
+    bill = replace(make(1, 12), repeat="m", repeat_freq=2, repeat_until=None, repeat_all_active=1)
+    assert fields_applied(
+        {"repeat": "m", "repeat_freq": 2, "repeat_until": "", "repeat_all_active": 1}, bill
+    )
+    assert not fields_applied({"repeat": "w"}, bill)
+    assert not fields_applied({"repeat_until": "2027-01-31"}, bill)
+
+
 def test_update_and_delete_plans(project: Project) -> None:
     bills = {b.id: b for b in (make(31, 13), make(32, 12), make(33, 14))}
     plan = plan_update_bill(project, bills, 32, what="Groupe")

@@ -278,18 +278,30 @@ def plan_update_bill(
     comment: str | None = None,
     category: str | int | None = None,
     payment_mode: str | int | None = None,
+    currency: str | None = None,
+    exchange_rate: Decimal | None = None,
+    repeat: str | None = None,
+    repeat_freq: int | None = None,
+    repeat_until: str | None = None,
+    repeat_all_active: int | None = None,
 ) -> list[tuple[int, dict[str, Any]]]:
     """Calcule les modifications (identifiant, champs), un couple par dépense concernée.
 
-    Pour un groupe, les champs communs sont appliqués à toutes ses dépenses ; le montant et
-    les participants d'un groupe ne sont pas modifiables (supprimer puis recréer).
+    Pour un groupe, les champs communs sont appliqués à toutes ses dépenses ; le montant, la
+    devise et les participants d'un groupe ne sont pas modifiables (supprimer puis recréer).
+
+    ``currency`` demande ``amount`` : le montant est alors celui de la devise étrangère, converti
+    avec le taux. Un montant donné sans devise remplace la devise d'origine par celle du projet.
+    ``repeat_until=""`` retire la date de fin de la récurrence.
     """
     group = _locate(bills, bill_id)
-    if group.is_group and (amount is not None or owers is not None):
+    if group.is_group and (amount is not None or owers is not None or currency):
         raise SplitError(
-            "le montant et les participants d'une dépense à répartition personnalisée ne "
-            "peuvent pas être modifiés : supprime-la puis recrée-la"
+            "le montant, la devise et les participants d'une dépense à répartition "
+            "personnalisée ne peuvent pas être modifiés : supprime-la puis recrée-la"
         )
+    if currency and amount is None:
+        raise ValueError("le montant est requis pour changer la devise")
 
     fields: dict[str, Any] = {}
     if what is not None:
@@ -308,11 +320,27 @@ def plan_update_bill(
         )
     if owers is not None:
         fields["payed_for"] = resolve_owers(project, owers)
+    new_foreign: ForeignAmount | None = None
     if amount is not None:
         value = parse_amount(amount)
         if value <= 0:
             raise SplitError("le montant doit être positif")
+        if currency:
+            rate = resolve_rate(project, currency.strip(), exchange_rate)
+            if rate is not None and rate != 1:
+                new_foreign = ForeignAmount(currency.strip(), value, rate)
+                value = (value * rate).quantize(Decimal("0.01"))
+                if value <= 0:
+                    raise SplitError("le montant converti est nul")
         fields["amount"] = format_amount(value)
+    if repeat is not None:
+        fields["repeat"] = _repeat(repeat)
+    if repeat_freq is not None:
+        fields["repeat_freq"] = repeat_freq
+    if repeat_until is not None:
+        fields["repeat_until"] = repeat_until
+    if repeat_all_active is not None:
+        fields["repeat_all_active"] = repeat_all_active
     if not fields and comment is None:
         raise ValueError("aucun champ à modifier")
 
@@ -322,7 +350,7 @@ def plan_update_bill(
         if comment is not None or "amount" in fields:
             text, foreign = split_comment(bill.comment)
             if "amount" in fields:
-                foreign = None  # la métadonnée de devise serait périmée
+                foreign = new_foreign  # l'ancienne métadonnée de devise serait périmée
             if comment is not None:
                 text = comment
             bill_fields["comment"] = join_comment(text, foreign)
@@ -427,5 +455,9 @@ def fields_applied(fields: Mapping[str, Any], bill: Bill) -> bool:
         "payed_for": lambda v: set(bill.ower_ids) == set(v),
         "amount": lambda v: _same_amount(bill.amount, v),
         "comment": lambda v: bill.comment == v,
+        "repeat": lambda v: bill.repeat == v,
+        "repeat_freq": lambda v: bill.repeat_freq == v,
+        "repeat_until": lambda v: (bill.repeat_until or "") == (v or ""),
+        "repeat_all_active": lambda v: bill.repeat_all_active == v,
     }
     return all(checks[key](value) for key, value in fields.items() if key in checks)

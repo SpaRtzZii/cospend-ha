@@ -323,3 +323,61 @@ async def test_foreign_currency_with_rate_one_is_a_plain_bill(client, fake, proj
     )
     assert stored(fake, ids[0])["comment"] == "c"
     assert stored(fake, ids[0])["amount"] == 10.0
+
+
+async def test_update_amount_in_a_foreign_currency(client, fake, project) -> None:
+    bills = await current_bills(client)
+    await update_bill(
+        client, project, bills, 30, amount="100", currency="USD", exchange_rate=D("0.92")
+    )
+    bill = stored(fake, 30)
+    assert bill["amount"] == 92.0
+    assert bill["comment"].endswith("#USD:100@0.92")
+
+
+async def test_update_back_to_the_project_currency(client, fake, project) -> None:
+    ids = await add_bill(
+        client,
+        project,
+        what="Hôtel",
+        amount="100",
+        payer=12,
+        when=WHEN,
+        currency="USD",
+        exchange_rate=D("0.92"),
+    )
+    bills = await current_bills(client)
+    await update_bill(client, project, bills, ids[0], amount="80")
+    assert stored(fake, ids[0])["amount"] == 80.0
+    assert "#" not in stored(fake, ids[0])["comment"]
+
+
+async def test_update_currency_needs_an_amount_and_not_for_groups(client, project) -> None:
+    bills = await current_bills(client)
+    with pytest.raises(ValueError, match="montant est requis"):
+        await update_bill(client, project, bills, 30, currency="USD", exchange_rate=D("0.9"))
+    with pytest.raises(SplitError):
+        await update_bill(client, project, bills, 31, currency="USD", exchange_rate=D("0.9"))
+
+
+async def test_update_repeat_fields(client, fake, project) -> None:
+    bills = await current_bills(client)
+    await update_bill(
+        client,
+        project,
+        bills,
+        30,
+        repeat="m",
+        repeat_freq=2,
+        repeat_until="2027-01-31",
+        repeat_all_active=1,
+    )
+    request = next(r for r in reversed(fake.requests) if r.method == "PUT")
+    assert request.form == {
+        "repeat": "m",
+        "repeatFreq": "2",
+        "repeatUntil": "2027-01-31",
+        "repeatAllActive": "1",
+    }
+    with pytest.raises(ResolutionError):
+        await update_bill(client, project, bills, 30, repeat="x")
