@@ -124,6 +124,8 @@ export interface SankeyOptions {
   gap?: number;
   /** Marge de chaque côté, réservée aux libellés. */
   margin?: number;
+  /** Marge en haut et en bas, pour que les libellés des nœuds extrêmes ne soient pas coupés. */
+  padding?: number;
 }
 
 /**
@@ -139,6 +141,8 @@ export function sankeyLayout(
   const nodeWidth = options.nodeWidth ?? 12;
   const gap = options.gap ?? 8;
   const margin = options.margin ?? 0;
+  const padding = options.padding ?? 0;
+  const room = options.height - 2 * padding;
   const known = new Set(nodesIn.map((n) => n.id));
   const links = linksIn.filter(
     (l) => l.value > 0 && known.has(l.source) && known.has(l.target),
@@ -169,9 +173,9 @@ export function sankeyLayout(
   // Échelle commune : la colonne la plus contrainte (beaucoup de nœuds) fixe le facteur.
   let scale = Infinity;
   for (const list of byColumn.values()) {
-    const room = options.height - gap * (list.length - 1);
+    const free = room - gap * (list.length - 1);
     const sum = list.reduce((acc, n) => acc + n.value, 0);
-    scale = Math.min(scale, Math.max(room, 1) / sum);
+    scale = Math.min(scale, Math.max(free, 1) / sum);
   }
 
   const span = options.width - 2 * margin - nodeWidth;
@@ -182,7 +186,7 @@ export function sankeyLayout(
     const total =
       list.reduce((acc, n) => acc + n.value * scale, 0) +
       gap * (list.length - 1);
-    let y = (options.height - total) / 2;
+    let y = padding + (room - total) / 2;
     for (const node of list) {
       const height = node.value * scale;
       placed.set(node.id, { ...node, x: margin + index * step, y, height });

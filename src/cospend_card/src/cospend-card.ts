@@ -10,7 +10,6 @@ import {
   subscribeChanges,
 } from "./api";
 import {
-  balanceWidth,
   categoryBackground,
   categoryView,
   formatAmount,
@@ -32,6 +31,7 @@ import type {
 } from "./types";
 import "./bill-form";
 import "./manage";
+import "./balances";
 import "./settlement";
 import "./stats";
 import "./cospend-card-editor";
@@ -57,6 +57,7 @@ class CospendCard extends LitElement {
     _manage: { state: true },
     _settle: { state: true },
     _stats: { state: true },
+    _balances: { state: true },
     _editing: { state: true },
     _confirming: { state: true },
     _busy: { state: true },
@@ -78,6 +79,7 @@ class CospendCard extends LitElement {
   declare _manage: boolean;
   declare _settle: boolean;
   declare _stats: boolean;
+  declare _balances: boolean;
   declare _editing: boolean;
   declare _confirming: boolean;
   declare _busy: boolean;
@@ -106,6 +108,7 @@ class CospendCard extends LitElement {
     this._manage = false;
     this._settle = false;
     this._stats = false;
+    this._balances = false;
     this._editing = false;
     this._confirming = false;
     this._busy = false;
@@ -384,7 +387,13 @@ class CospendCard extends LitElement {
     if (!this._projects) return this._shell(title, html`<p class="hint">${this._t("loading")}</p>`);
     if (!this._project) return this._shell(title, html`<p class="hint">${this._t("no_projects")}</p>`);
     const project = this._project;
-    const body = this._stats
+    const body = this._balances
+      ? html`<cospend-balances
+          .hass=${this.hass}
+          .project=${project}
+          @close=${() => (this._balances = false)}
+        ></cospend-balances>`
+      : this._stats
       ? html`<cospend-stats
           .hass=${this.hass}
           .project=${project}
@@ -428,7 +437,9 @@ class CospendCard extends LitElement {
       : html`
           ${project.available ? nothing : html`<p class="banner warn">${this._t("unavailable")}</p>`}
           ${this._failed ? this._renderError() : nothing}
-          ${this._config?.show_balances === false ? nothing : this._renderBalances(project)}
+          ${this._config?.show_balances !== false && this._config?.inline_balances === true
+            ? html`<cospend-balances inline .hass=${this.hass} .project=${project}></cospend-balances>`
+            : nothing}
           ${this._config?.show_bills === false ? nothing : this._renderBills(project)}
         `;
     return this._shell(title ?? project.name, body, project);
@@ -453,7 +464,20 @@ class CospendCard extends LitElement {
                 ${this._t("pending_count", { count: project.pending })}
               </span>`
             : nothing}
-          ${project && this._config?.show_stats !== false && !this._form && !this._manage && !this._settle && !this._stats
+          ${project && this._config?.show_balances !== false && this._config?.inline_balances !== true && !this._form && !this._manage && !this._settle && !this._stats && !this._balances
+            ? html`<button
+                class="gear balances"
+                aria-label=${this._t("balances")}
+                title=${this._t("balances")}
+                @click=${() => {
+                  this._detail = null;
+                  this._balances = true;
+                }}
+              >
+                <ha-icon icon="mdi:scale-balance"></ha-icon>
+              </button>`
+            : nothing}
+          ${project && this._config?.show_stats !== false && !this._form && !this._manage && !this._settle && !this._stats && !this._balances
             ? html`<button
                 class="gear stats"
                 aria-label=${this._t("stats")}
@@ -466,7 +490,7 @@ class CospendCard extends LitElement {
                 <ha-icon icon="mdi:chart-box-outline"></ha-icon>
               </button>`
             : nothing}
-          ${project && this._config?.show_settlement !== false && !this._form && !this._manage && !this._settle && !this._stats
+          ${project && this._config?.show_settlement !== false && !this._form && !this._manage && !this._settle && !this._stats && !this._balances
             ? html`<button
                 class="gear settle"
                 aria-label=${this._t("settlement")}
@@ -479,7 +503,7 @@ class CospendCard extends LitElement {
                 <ha-icon icon="mdi:swap-horizontal"></ha-icon>
               </button>`
             : nothing}
-          ${project && this._canManage(project) && !this._form && !this._manage && !this._settle && !this._stats
+          ${project && this._canManage(project) && !this._form && !this._manage && !this._settle && !this._stats && !this._balances
             ? html`<button
                 class="gear manage"
                 aria-label=${this._t("manage")}
@@ -524,46 +548,6 @@ class CospendCard extends LitElement {
       ${this._t("error")}
       <button class="link" @click=${() => void this._load()}>${this._t("retry")}</button>
     </div>`;
-  }
-
-  private _renderBalances(project: Project): TemplateResult {
-    const language = this._language;
-    return html`
-      <section>
-        <h3>${this._t("balances")}</h3>
-        <ul class="balances">
-          ${project.members.map((member) => this._balanceRow(project, member, language))}
-        </ul>
-      </section>
-    `;
-  }
-
-  private _balanceRow(project: Project, member: Member, language: string): TemplateResult {
-    const width = balanceWidth(member.balance, project.members);
-    const tone = member.balance > 0.004 ? "positive" : member.balance < -0.004 ? "negative" : "zero";
-    return html`
-      <li class=${member.activated ? "" : "inactive"}>
-        ${this._avatar(member)}
-        <span class="name">
-          ${member.name}${member.activated ? nothing : html` <small>(${this._t("inactive")})</small>`}
-        </span>
-        <span class="bar" aria-hidden="true">
-          <span class="half left">
-            ${tone === "negative"
-              ? html`<span class="fill negative" style="width:${width}%"></span>`
-              : nothing}
-          </span>
-          <span class="half right">
-            ${tone === "positive"
-              ? html`<span class="fill positive" style="width:${width}%"></span>`
-              : nothing}
-          </span>
-        </span>
-        <span class="amount ${tone}">
-          ${formatAmount(member.balance, project.currency, language, { sign: true })}
-        </span>
-      </li>
-    `;
   }
 
   private _avatar(member: Pick<Member, "name" | "color">): TemplateResult {
@@ -997,9 +981,6 @@ class CospendCard extends LitElement {
       gap: 10px;
       padding: 6px 0;
     }
-    .balances li.inactive {
-      opacity: 0.55;
-    }
     .name {
       flex: 0 1 30%;
       min-width: 0;
@@ -1007,49 +988,6 @@ class CospendCard extends LitElement {
       text-overflow: ellipsis;
       white-space: nowrap;
       color: var(--primary-text-color);
-    }
-    .bar {
-      flex: 1 1 auto;
-      display: flex;
-      height: 10px;
-      min-width: 40px;
-    }
-    .half {
-      display: flex;
-      flex: 1;
-      background: var(--secondary-background-color);
-    }
-    .half.left {
-      justify-content: flex-end;
-      border-radius: 5px 0 0 5px;
-      margin-right: 1px;
-    }
-    .half.right {
-      border-radius: 0 5px 5px 0;
-    }
-    .fill {
-      height: 100%;
-    }
-    .fill.positive {
-      background: var(--success-color, #43a047);
-      border-radius: 0 5px 5px 0;
-    }
-    .fill.negative {
-      background: var(--error-color, #db4437);
-      border-radius: 5px 0 0 5px;
-    }
-    .amount {
-      flex: none;
-      min-width: 84px;
-      text-align: right;
-      font-variant-numeric: tabular-nums;
-      color: var(--primary-text-color);
-    }
-    .amount.positive {
-      color: var(--success-color, #43a047);
-    }
-    .amount.negative {
-      color: var(--error-color, #db4437);
     }
     .date-header {
       padding: 10px 0 2px;

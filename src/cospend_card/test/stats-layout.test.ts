@@ -121,6 +121,14 @@ describe("sankeyLayout", () => {
     expect(h("category:5")).toBeCloseTo(h("payer:1") + h("payer:2"));
   });
 
+  it("réserve une marge en haut et en bas", () => {
+    const layout = sankeyLayout(nodes, links, { ...options, padding: 15 });
+    for (const n of layout.nodes) {
+      expect(n.y).toBeGreaterThanOrEqual(15 - 0.001);
+      expect(n.y + n.height).toBeLessThanOrEqual(200 - 15 + 0.001);
+    }
+  });
+
   it("trace un flux par lien, d'épaisseur proportionnelle, de la couleur de la source", () => {
     const layout = sankeyLayout(nodes, links, options);
     expect(layout.links).toHaveLength(4);

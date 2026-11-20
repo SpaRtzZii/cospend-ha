@@ -108,6 +108,8 @@ export interface CospendCardConfig {
   show_settlement?: boolean;
   /** Bouton « Statistiques » (tableau, graphiques, Sankey) ; vrai par défaut. */
   show_stats?: boolean;
+  /** Soldes affichés sur la carte, au-dessus des dépenses ; sinon dans un écran à part (faux par défaut). */
+  inline_balances?: boolean;
 }
 
 /** Réponse des services d'écriture (voir services.py). */
