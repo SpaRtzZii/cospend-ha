@@ -1,4 +1,4 @@
-import type { BillItem, BillsPage, HassLike, Project } from "./types";
+import type { BillItem, BillsPage, HassLike, Project, WriteResult } from "./types";
 
 export async function fetchProjects(hass: HassLike): Promise<Project[]> {
   const result = await hass.callWS<{ projects: Project[] }>({ type: "cospend/projects" });
@@ -36,4 +36,58 @@ export function fetchBill(
 /** Prévient à chaque mise à jour des données ; renvoie la fonction de désinscription. */
 export function subscribeChanges(hass: HassLike, onChange: () => void): Promise<() => void> {
   return hass.connection.subscribeMessage(() => onChange(), { type: "cospend/subscribe" });
+}
+
+async function callService(
+  hass: HassLike,
+  service: string,
+  data: Record<string, unknown>,
+): Promise<WriteResult> {
+  const result = await hass.callWS<{ response?: WriteResult }>({
+    type: "call_service",
+    domain: "cospend",
+    service,
+    service_data: data,
+    return_response: true,
+  });
+  return result.response ?? {};
+}
+
+export interface NewBill {
+  project: string;
+  title: string;
+  amount: string;
+  payer: number;
+  owers: number[];
+  date: string;
+  category?: number;
+  payment_mode?: number;
+  comment?: string;
+}
+
+/** Crée une dépense (répartition égale entre les participants). */
+export function addBill(hass: HassLike, bill: NewBill): Promise<WriteResult> {
+  const { category, payment_mode, comment, ...rest } = bill;
+  return callService(hass, "add_bill", {
+    ...rest,
+    payer: String(bill.payer),
+    owers: bill.owers.map(String),
+    split_mode: "even",
+    comment: comment ?? "",
+    ...(category ? { category: String(category) } : {}),
+    ...(payment_mode ? { payment_mode: String(payment_mode) } : {}),
+  });
+}
+
+/** Supprime une dépense (et tout son groupe pour une répartition personnalisée). */
+export function deleteBill(hass: HassLike, project: string, billId: number): Promise<WriteResult> {
+  return callService(hass, "delete_bill", { project, bill_id: billId, whole_group: true });
+}
+
+/** Message lisible d'une erreur renvoyée par Home Assistant. */
+export function errorMessage(error: unknown): string {
+  if (error && typeof error === "object" && "message" in error) {
+    return String((error as { message: unknown }).message);
+  }
+  return String(error);
 }

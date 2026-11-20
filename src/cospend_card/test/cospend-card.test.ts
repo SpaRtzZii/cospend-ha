@@ -57,7 +57,7 @@ function bill(id: number, what: string, extra: Partial<BillItem> = {}): BillItem
   };
 }
 
-function makeHass(projects: Project[], bills: BillItem[]) {
+function makeHass(projects: Project[], bills: BillItem[], onWrite?: (m: Record<string, unknown>) => unknown) {
   const calls: Array<Record<string, unknown>> = [];
   let notify: () => void = () => {};
   const hass: HassLike = {
@@ -89,6 +89,9 @@ function makeHass(projects: Project[], bills: BillItem[]) {
             ],
           } as T;
         }
+      }
+      if (message.type === "call_service" && onWrite) {
+        return { response: await onWrite(message) } as T;
       }
       throw new Error(`inattendu : ${String(message.type)}`);
     },
@@ -272,6 +275,110 @@ describe("cospend-card", () => {
     await settle(card);
     expect(calls.length).toBeGreaterThan(before);
     expect(card.shadowRoot!.querySelectorAll(".row")).toHaveLength(2);
+  });
+});
+
+describe("écriture", () => {
+  beforeEach(() => {
+    document.body.innerHTML = "";
+  });
+
+  const click = (card: Card, selector: string) =>
+    (card.shadowRoot!.querySelector(selector) as HTMLButtonElement).click();
+
+  it("propose l'ajout seulement si le projet est modifiable et l'écriture autorisée", async () => {
+    const { hass } = makeHass([project()], []);
+    expect((await mount(hass)).shadowRoot!.querySelector("button.add")).not.toBeNull();
+    document.body.innerHTML = "";
+    expect((await mount(hass, { allow_write: false })).shadowRoot!.querySelector("button.add")).toBeNull();
+    document.body.innerHTML = "";
+    const readOnly = makeHass([project({ can_write: false })], []);
+    expect((await mount(readOnly.hass)).shadowRoot!.querySelector("button.add")).toBeNull();
+  });
+
+  it("ouvre le formulaire puis revient à la liste en annulant", async () => {
+    const { hass } = makeHass([project()], []);
+    const card = await mount(hass);
+    click(card, "button.add");
+    await settle(card);
+    expect(card.shadowRoot!.querySelector("cospend-bill-form")).not.toBeNull();
+    card.shadowRoot!.querySelector("cospend-bill-form")!.dispatchEvent(new CustomEvent("cancel"));
+    await settle(card);
+    expect(card.shadowRoot!.querySelector("cospend-bill-form")).toBeNull();
+  });
+
+  it("confirme l'enregistrement, y compris hors ligne, et recharge la liste", async () => {
+    const { hass, calls } = makeHass([project()], [bill(1, "Courses")]);
+    const card = await mount(hass);
+    click(card, "button.add");
+    await settle(card);
+    const form = card.shadowRoot!.querySelector("cospend-bill-form")!;
+    form.dispatchEvent(new CustomEvent("saved", { detail: { queued: true } }));
+    await settle(card);
+    expect(card.shadowRoot!.querySelector("cospend-bill-form")).toBeNull();
+    expect(text(card)).toContain("Enregistrée hors ligne");
+    const refreshed = calls.filter((c) => c.type === "cospend/bills").length;
+    expect(refreshed).toBeGreaterThan(1);
+  });
+
+  it("demande confirmation avant de supprimer, puis supprime", async () => {
+    const writes: Array<Record<string, unknown>> = [];
+    const { hass } = makeHass([project()], [bill(1, "Courses")], (message) => {
+      writes.push(message);
+      return {};
+    });
+    const card = await mount(hass);
+    click(card, ".row");
+    await settle(card);
+    click(card, "button.danger");
+    await settle(card);
+    expect(writes).toHaveLength(0); // rien n'est parti avant la confirmation
+    expect(text(card)).toContain("corbeille de Nextcloud");
+    click(card, "button.danger.solid");
+    await settle(card);
+    expect(writes).toHaveLength(1);
+    expect(writes[0]).toMatchObject({
+      service: "delete_bill",
+      service_data: { project: "voyage", bill_id: 1, whole_group: true },
+    });
+    expect(card.shadowRoot!.querySelector(".detail")).toBeNull();
+    expect(text(card)).toContain("Dépense supprimée");
+  });
+
+  it("annule la suppression", async () => {
+    const writes: unknown[] = [];
+    const { hass } = makeHass([project()], [bill(1, "Courses")], (m) => writes.push(m));
+    const card = await mount(hass);
+    click(card, ".row");
+    await settle(card);
+    click(card, "button.danger");
+    await settle(card);
+    click(card, ".confirm button.secondary");
+    await settle(card);
+    expect(writes).toHaveLength(0);
+    expect(card.shadowRoot!.querySelector(".confirm")).toBeNull();
+  });
+
+  it("affiche l'erreur si la suppression échoue", async () => {
+    const { hass } = makeHass([project()], [bill(1, "Courses")], () => {
+      throw { message: "Projet archivé" };
+    });
+    const card = await mount(hass);
+    click(card, ".row");
+    await settle(card);
+    click(card, "button.danger");
+    await settle(card);
+    click(card, "button.danger.solid");
+    await settle(card);
+    expect(text(card)).toContain("Projet archivé");
+  });
+
+  it("n'offre pas la suppression en lecture seule", async () => {
+    const { hass } = makeHass([project()], [bill(1, "Courses")]);
+    const card = await mount(hass, { allow_write: false });
+    click(card, ".row");
+    await settle(card);
+    expect(card.shadowRoot!.querySelector("button.danger")).toBeNull();
   });
 });
 

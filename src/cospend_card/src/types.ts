@@ -97,11 +97,23 @@ export interface CospendCardConfig {
   show_bills?: boolean;
   show_search?: boolean;
   page_size?: number;
+  /** Autorise l'ajout et la suppression de dépenses depuis la carte (activé par défaut). */
+  allow_write?: boolean;
+}
+
+/** Réponse des services d'écriture (voir services.py). */
+export interface WriteResult {
+  project?: string;
+  bill_ids?: number[];
+  /** ``true`` quand Nextcloud est injoignable : l'opération est en file d'attente. */
+  queued?: boolean;
+  operation_id?: string;
 }
 
 /** Ce dont la carte a besoin de l'objet ``hass`` de Home Assistant. */
 export interface HassLike {
   language?: string;
+  user?: { name?: string };
   locale?: { language?: string };
   callWS<T>(message: Record<string, unknown>): Promise<T>;
   connection: {

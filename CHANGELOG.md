@@ -4,6 +4,15 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 
 ## [Non publié]
 
+### Ajouté (jalon M6a : écriture depuis la carte)
+- Bouton « Ajouter une dépense » : formulaire avec titre, montant ou calcul (aperçu du résultat),
+  payeur (par défaut le membre du même nom que l'utilisateur connecté), participants, date,
+  catégorie, mode de paiement et commentaire, en répartition égale.
+- Suppression d'une dépense depuis son détail, avec confirmation (corbeille de Nextcloud ;
+  une répartition personnalisée est supprimée en entier).
+- Hors ligne, l'opération passe par la file d'attente et la carte le dit.
+- Option `allow_write` (case dans l'éditeur visuel) pour une carte en lecture seule.
+
 ### Corrigé (carte)
 - Icônes de catégories : les remboursements affichent 💰 (catégorie interne −11 de Cospend), la
   pastille prend la couleur de la catégorie, et une dépense sans catégorie reçoit une icône neutre

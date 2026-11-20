@@ -1,7 +1,14 @@
 import { LitElement, css, html, nothing } from "lit";
 import type { TemplateResult } from "lit";
 
-import { fetchBill, fetchBills, fetchProjects, subscribeChanges } from "./api";
+import {
+  deleteBill,
+  errorMessage,
+  fetchBill,
+  fetchBills,
+  fetchProjects,
+  subscribeChanges,
+} from "./api";
 import {
   balanceWidth,
   categoryBackground,
@@ -15,7 +22,15 @@ import {
   readableOn,
 } from "./format";
 import { translate } from "./i18n";
-import type { BillItem, CospendCardConfig, HassLike, Member, Project } from "./types";
+import type {
+  BillItem,
+  CospendCardConfig,
+  HassLike,
+  Member,
+  Project,
+  WriteResult,
+} from "./types";
+import "./bill-form";
 import "./cospend-card-editor";
 
 const DEFAULT_PAGE_SIZE = 20;
@@ -35,6 +50,10 @@ class CospendCard extends LitElement {
     _failed: { state: true },
     _search: { state: true },
     _detail: { state: true },
+    _form: { state: true },
+    _confirming: { state: true },
+    _busy: { state: true },
+    _notice: { state: true },
   };
 
   declare hass?: HassLike;
@@ -48,12 +67,17 @@ class CospendCard extends LitElement {
   declare _failed: boolean;
   declare _search: string;
   declare _detail: BillItem | null;
+  declare _form: boolean;
+  declare _confirming: boolean;
+  declare _busy: boolean;
+  declare _notice: { kind: "ok" | "error"; text: string } | null;
 
   private _unsubscribe?: () => void;
   private _subscribing = false;
   private _started = false;
   private _searchTimer?: ReturnType<typeof setTimeout>;
   private _refreshTimer?: ReturnType<typeof setTimeout>;
+  private _noticeTimer?: ReturnType<typeof setTimeout>;
   private _requestId = 0;
 
   constructor() {
@@ -67,6 +91,10 @@ class CospendCard extends LitElement {
     this._failed = false;
     this._search = "";
     this._detail = null;
+    this._form = false;
+    this._confirming = false;
+    this._busy = false;
+    this._notice = null;
   }
 
   static getConfigElement(): HTMLElement {
@@ -108,6 +136,7 @@ class CospendCard extends LitElement {
     this._started = false;
     clearTimeout(this._searchTimer);
     clearTimeout(this._refreshTimer);
+    clearTimeout(this._noticeTimer);
   }
 
   protected willUpdate(changed: Map<string, unknown>): void {
@@ -243,6 +272,7 @@ class CospendCard extends LitElement {
   private _onProject(event: Event): void {
     this._selected = (event.target as HTMLSelectElement).value;
     this._detail = null;
+    this._form = false;
     this._search = "";
     void this._guard(() => this._loadBills(true));
   }
@@ -264,11 +294,47 @@ class CospendCard extends LitElement {
   private async _open(item: BillItem): Promise<void> {
     const project = this._project;
     if (!this.hass || !project) return;
+    this._confirming = false;
     this._detail = item; // affichage immédiat, complété (parts) par la réponse du serveur
     try {
       this._detail = await fetchBill(this.hass, project, item.id);
     } catch {
       this._detail = item;
+    }
+  }
+
+  private _canWrite(project: Project): boolean {
+    return this._config?.allow_write !== false && project.can_write;
+  }
+
+  private _announce(kind: "ok" | "error", text: string): void {
+    this._notice = { kind, text };
+    clearTimeout(this._noticeTimer);
+    this._noticeTimer = setTimeout(() => (this._notice = null), 6000);
+  }
+
+  private async _onSaved(event: CustomEvent<WriteResult>): Promise<void> {
+    this._form = false;
+    this._announce("ok", this._t(event.detail?.queued ? "saved_queued" : "saved"));
+    await this._refresh();
+  }
+
+  private async _delete(): Promise<void> {
+    const project = this._project;
+    const item = this._detail;
+    if (!this.hass || !project || !item || this._busy) return;
+    this._busy = true;
+    try {
+      const result = await deleteBill(this.hass, project.id, item.ids[0]);
+      this._detail = null;
+      this._confirming = false;
+      this._announce("ok", this._t(result.queued ? "deleted_queued" : "deleted"));
+      await this._refresh();
+    } catch (error) {
+      this._confirming = false;
+      this._announce("error", this._t("error_write", { message: errorMessage(error) }));
+    } finally {
+      this._busy = false;
     }
   }
 
@@ -289,7 +355,14 @@ class CospendCard extends LitElement {
     if (!this._projects) return this._shell(title, html`<p class="hint">${this._t("loading")}</p>`);
     if (!this._project) return this._shell(title, html`<p class="hint">${this._t("no_projects")}</p>`);
     const project = this._project;
-    const body = this._detail
+    const body = this._form
+      ? html`<cospend-bill-form
+          .hass=${this.hass}
+          .project=${project}
+          @cancel=${() => (this._form = false)}
+          @saved=${(event: CustomEvent<WriteResult>) => void this._onSaved(event)}
+        ></cospend-bill-form>`
+      : this._detail
       ? this._renderDetail(project, this._detail)
       : html`
           ${project.available ? nothing : html`<p class="banner warn">${this._t("unavailable")}</p>`}
@@ -336,6 +409,11 @@ class CospendCard extends LitElement {
               </select>`
             : nothing}
         </div>
+        ${this._notice
+          ? html`<p class="banner ${this._notice.kind === "ok" ? "ok" : "error"}" role="status">
+              ${this._notice.text}
+            </p>`
+          : nothing}
         ${body}
       </ha-card>
     `;
@@ -400,7 +478,14 @@ class CospendCard extends LitElement {
     let previousDate = "";
     return html`
       <section>
-        <h3>${this._t("bills")}</h3>
+        <div class="section-head">
+          <h3>${this._t("bills")}</h3>
+          ${this._canWrite(project)
+            ? html`<button class="add" @click=${() => (this._form = true)}>
+                <ha-icon icon="mdi:plus"></ha-icon> ${this._t("add_bill")}
+              </button>`
+            : nothing}
+        </div>
         ${this._config?.show_search === false
           ? nothing
           : html`<input
@@ -493,6 +578,25 @@ class CospendCard extends LitElement {
         ></span>`;
   }
 
+  private _renderDelete(item: BillItem): TemplateResult {
+    if (!this._confirming) {
+      return html`<button class="danger" @click=${() => (this._confirming = true)}>
+        <ha-icon icon="mdi:delete-outline"></ha-icon> ${this._t("delete")}
+      </button>`;
+    }
+    return html`<div class="confirm" role="alertdialog">
+      <p>${this._t(item.is_group ? "confirm_delete_group" : "confirm_delete")}</p>
+      <div class="actions">
+        <button class="secondary" ?disabled=${this._busy} @click=${() => (this._confirming = false)}>
+          ${this._t("cancel")}
+        </button>
+        <button class="danger solid" ?disabled=${this._busy} @click=${() => void this._delete()}>
+          ${this._t("yes_delete")}
+        </button>
+      </div>
+    </div>`;
+  }
+
   private _renderDetail(project: Project, item: BillItem): TemplateResult {
     const language = this._language;
     const category = categoryView(project, item.category_id, this._t("reimbursement"));
@@ -552,6 +656,7 @@ class CospendCard extends LitElement {
             </li>`;
           })}
         </ul>
+        ${this._canWrite(project) ? this._renderDelete(item) : nothing}
       </section>
     `;
   }
@@ -654,6 +759,71 @@ class CospendCard extends LitElement {
     .banner.warn {
       color: var(--primary-text-color);
       background: color-mix(in srgb, var(--warning-color, #ffa600) 20%, transparent);
+    }
+    .banner.ok {
+      color: var(--primary-text-color);
+      background: color-mix(in srgb, var(--success-color, #43a047) 20%, transparent);
+    }
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    button.add,
+    button.danger,
+    button.secondary {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font: inherit;
+      padding: 6px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    button.add {
+      color: var(--primary-color);
+      background: color-mix(in srgb, var(--primary-color) 12%, transparent);
+      border: none;
+    }
+    button.add ha-icon,
+    button.danger ha-icon {
+      --mdc-icon-size: 18px;
+    }
+    button.danger {
+      margin-top: 12px;
+      color: var(--error-color, #db4437);
+      background: transparent;
+      border: 1px solid var(--error-color, #db4437);
+    }
+    button.danger.solid {
+      margin-top: 0;
+      color: #fff;
+      background: var(--error-color, #db4437);
+    }
+    button.secondary {
+      color: var(--primary-color);
+      background: transparent;
+      border: 1px solid var(--divider-color);
+    }
+    button:disabled {
+      opacity: 0.6;
+      cursor: default;
+    }
+    .confirm {
+      margin-top: 12px;
+      padding: 12px;
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--error-color, #db4437) 12%, transparent);
+    }
+    .confirm p {
+      margin: 0 0 8px;
+      color: var(--primary-text-color);
+    }
+    .actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
     }
     .banner.error {
       color: var(--primary-text-color);
