@@ -4,6 +4,8 @@ import type {
   HassLike,
   Project,
   SettlementPlan,
+  Statistics,
+  StatsFilters,
   WriteResult,
 } from "./types";
 
@@ -48,6 +50,19 @@ export function fetchSettlement(
     type: "cospend/settlement",
     project_id: project.id,
     entry_id: project.entry_id,
+  });
+}
+
+export function fetchStatistics(
+  hass: HassLike,
+  project: Pick<Project, "id" | "entry_id">,
+  filters: StatsFilters,
+): Promise<Statistics> {
+  return hass.callWS<Statistics>({
+    type: "cospend/statistics",
+    project_id: project.id,
+    entry_id: project.entry_id,
+    ...filters,
   });
 }
 

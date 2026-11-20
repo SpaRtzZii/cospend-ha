@@ -106,6 +106,8 @@ export interface CospendCardConfig {
   allow_manage?: boolean;
   /** Bouton « Remboursements » (plan pour solder les comptes) ; vrai par défaut. */
   show_settlement?: boolean;
+  /** Bouton « Statistiques » (tableau, graphiques, Sankey) ; vrai par défaut. */
+  show_stats?: boolean;
 }
 
 /** Réponse des services d'écriture (voir services.py). */
@@ -122,6 +124,55 @@ export interface SettlementPlan {
   transactions: SettlementTransaction[];
   /** Opérations en attente, pas encore dans les soldes du serveur. */
   pending: number;
+}
+
+export interface StatsMember {
+  id: number;
+  paid: number;
+  spent: number;
+  balance: number;
+}
+
+export interface StatsTotal {
+  id: number;
+  total: number;
+}
+
+export interface StatsMonth {
+  /** AAAA-MM */
+  month: string;
+  total: number;
+  /** Total par identifiant de catégorie. */
+  by_category: Record<string, number>;
+}
+
+export interface StatsLink {
+  /** ``payer:<id>``, ``category:<id>`` ou ``ower:<id>`` */
+  source: string;
+  target: string;
+  value: number;
+}
+
+export interface Statistics {
+  total: number;
+  count: number;
+  members: StatsMember[];
+  categories: StatsTotal[];
+  payment_modes: StatsTotal[];
+  months: StatsMonth[];
+  links: StatsLink[];
+  pending: number;
+}
+
+/** Critères de la vue Statistiques ; un critère absent ne filtre rien. */
+export interface StatsFilters {
+  date_from?: string;
+  date_to?: string;
+  payer_id?: number;
+  ower_id?: number;
+  category_id?: number;
+  payment_mode_id?: number;
+  include_reimbursements?: boolean;
 }
 
 export interface WriteResult {

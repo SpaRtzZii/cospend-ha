@@ -33,6 +33,7 @@ import type {
 import "./bill-form";
 import "./manage";
 import "./settlement";
+import "./stats";
 import "./cospend-card-editor";
 
 const DEFAULT_PAGE_SIZE = 20;
@@ -55,6 +56,7 @@ class CospendCard extends LitElement {
     _form: { state: true },
     _manage: { state: true },
     _settle: { state: true },
+    _stats: { state: true },
     _editing: { state: true },
     _confirming: { state: true },
     _busy: { state: true },
@@ -75,6 +77,7 @@ class CospendCard extends LitElement {
   declare _form: boolean;
   declare _manage: boolean;
   declare _settle: boolean;
+  declare _stats: boolean;
   declare _editing: boolean;
   declare _confirming: boolean;
   declare _busy: boolean;
@@ -102,6 +105,7 @@ class CospendCard extends LitElement {
     this._form = false;
     this._manage = false;
     this._settle = false;
+    this._stats = false;
     this._editing = false;
     this._confirming = false;
     this._busy = false;
@@ -380,7 +384,13 @@ class CospendCard extends LitElement {
     if (!this._projects) return this._shell(title, html`<p class="hint">${this._t("loading")}</p>`);
     if (!this._project) return this._shell(title, html`<p class="hint">${this._t("no_projects")}</p>`);
     const project = this._project;
-    const body = this._settle
+    const body = this._stats
+      ? html`<cospend-stats
+          .hass=${this.hass}
+          .project=${project}
+          @close=${() => (this._stats = false)}
+        ></cospend-stats>`
+      : this._settle
       ? html`<cospend-settlement
           .hass=${this.hass}
           .project=${project}
@@ -443,7 +453,20 @@ class CospendCard extends LitElement {
                 ${this._t("pending_count", { count: project.pending })}
               </span>`
             : nothing}
-          ${project && this._config?.show_settlement !== false && !this._form && !this._manage && !this._settle
+          ${project && this._config?.show_stats !== false && !this._form && !this._manage && !this._settle && !this._stats
+            ? html`<button
+                class="gear stats"
+                aria-label=${this._t("stats")}
+                title=${this._t("stats")}
+                @click=${() => {
+                  this._detail = null;
+                  this._stats = true;
+                }}
+              >
+                <ha-icon icon="mdi:chart-box-outline"></ha-icon>
+              </button>`
+            : nothing}
+          ${project && this._config?.show_settlement !== false && !this._form && !this._manage && !this._settle && !this._stats
             ? html`<button
                 class="gear settle"
                 aria-label=${this._t("settlement")}
@@ -456,7 +479,7 @@ class CospendCard extends LitElement {
                 <ha-icon icon="mdi:swap-horizontal"></ha-icon>
               </button>`
             : nothing}
-          ${project && this._canManage(project) && !this._form && !this._manage && !this._settle
+          ${project && this._canManage(project) && !this._form && !this._manage && !this._settle && !this._stats
             ? html`<button
                 class="gear manage"
                 aria-label=${this._t("manage")}

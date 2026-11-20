@@ -36,6 +36,14 @@ from .models import (
 )
 from .settlement import suggest_settlement
 from .splits import SplitError, SplitMode, SplitPart, compute_split
+from .statistics import (
+    Flow,
+    MemberTotals,
+    MonthTotal,
+    Statistics,
+    StatsFilter,
+    compute_statistics,
+)
 from .sync import BillChanges, ProjectBills
 from .utils import compare_versions, format_amount, normalize_url, parse_version
 from .writer import (
@@ -59,9 +67,15 @@ from .writer import (
     update_bill,
 )
 
-__version__ = "0.7.0"
+__version__ = "0.8.0"
 
 __all__ = [
+    "Flow",
+    "MemberTotals",
+    "MonthTotal",
+    "Statistics",
+    "StatsFilter",
+    "compute_statistics",
     "execute_creates",
     "execute_deletes",
     "execute_updates",

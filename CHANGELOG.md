@@ -4,6 +4,18 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 
 ## [Non publié]
 
+### Ajouté (jalon M7b : statistiques)
+- Bouton « Statistiques » dans la carte (option `show_stats`, active par défaut) : tableau (par
+  membre : payé, part, solde ; par catégorie, mode de paiement et mois), graphiques (dépenses par
+  mois empilées par catégorie, dépenses par catégorie) et diagramme de Sankey (payeur → catégorie
+  → bénéficiaire).
+- Filtres : période (mois, mois dernier, 30 jours, année, dates libres), payé par, pour,
+  catégorie, mode de paiement, inclusion des remboursements (exclus par défaut).
+- Commande websocket `cospend/statistics`. Les totaux sont calculés localement sur les dépenses
+  synchronisées (pas d'appel à Nextcloud), donc disponibles hors ligne ; les mois sont lus dans le
+  fuseau de Home Assistant.
+- Bibliothèque `aiocospend` 0.8.0 : `compute_statistics`, `StatsFilter` et modèles associés.
+
 ### Ajouté (jalon M7a : plan de remboursement)
 - Bouton « Remboursements » dans la carte (option `show_settlement`, active par défaut) : plan de
   Cospend (qui doit combien à qui), vos remboursements en premier, avec avertissement quand des

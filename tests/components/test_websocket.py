@@ -268,3 +268,55 @@ async def test_settlement_unknown_project(
     response = await _call(client, {"type": "cospend/settlement", "project_id": "autre"})
     assert not response["success"]
     assert response["error"]["code"] == "not_found"
+
+
+async def test_statistics_totals_and_links(
+    hass: HomeAssistant, init_integration, hass_ws_client
+) -> None:
+    client = await hass_ws_client(hass)
+    response = await _call(client, {"type": "cospend/statistics", "project_id": "teste"})
+    assert response["success"]
+    result = response["result"]
+    assert result["count"] > 0
+    assert result["total"] == round(sum(c["total"] for c in result["categories"]), 2)
+    assert abs(sum(m["balance"] for m in result["members"])) < 0.05
+    assert result["months"] and result["links"]
+    kinds = {link["source"].split(":")[0] for link in result["links"]}
+    assert kinds == {"payer", "category"}
+    assert result["pending"] == 0
+
+
+async def test_statistics_filters(hass: HomeAssistant, init_integration, hass_ws_client) -> None:
+    client = await hass_ws_client(hass)
+    full = (await _call(client, {"type": "cospend/statistics", "project_id": "teste"}))["result"]
+    payer = full["members"][0]["id"]
+    one = (
+        await _call(
+            client, {"type": "cospend/statistics", "project_id": "teste", "payer_id": payer}
+        )
+    )["result"]
+    assert 0 < one["total"] <= full["total"]
+    nothing = (
+        await _call(
+            client,
+            {
+                "type": "cospend/statistics",
+                "project_id": "teste",
+                "date_from": "2000-01-01",
+                "date_to": "2000-01-31",
+            },
+        )
+    )["result"]
+    assert nothing["count"] == 0 and nothing["total"] == 0
+
+
+async def test_statistics_bad_date_and_unknown_project(
+    hass: HomeAssistant, init_integration, hass_ws_client
+) -> None:
+    client = await hass_ws_client(hass)
+    bad = await _call(
+        client, {"type": "cospend/statistics", "project_id": "teste", "date_from": "hier"}
+    )
+    assert not bad["success"]
+    missing = await _call(client, {"type": "cospend/statistics", "project_id": "autre"})
+    assert missing["error"]["code"] == "not_found"

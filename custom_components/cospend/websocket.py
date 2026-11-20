@@ -2,23 +2,28 @@
 
 Les commandes renvoient des données déjà en mémoire dans le coordinateur, sauf
 ``cospend/settlement`` qui interroge Nextcloud (avec un calcul local de repli).
+``cospend/statistics`` calcule ses totaux localement sur les dépenses en mémoire.
 """
 
 from __future__ import annotations
 
 from collections.abc import Callable
+from datetime import date, datetime, time
 from typing import Any
 
 import voluptuous as vol
 from homeassistant.components import websocket_api
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.util import dt as dt_util
 
 from aiocospend import (
     Bill,
     CospendError,
     GroupedBill,
     Project,
+    StatsFilter,
+    compute_statistics,
     group_bills,
     split_comment,
     suggest_settlement,
@@ -38,6 +43,7 @@ def async_setup_websocket(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_bills)
     websocket_api.async_register_command(hass, ws_bill)
     websocket_api.async_register_command(hass, ws_settlement)
+    websocket_api.async_register_command(hass, ws_statistics)
     websocket_api.async_register_command(hass, ws_subscribe)
 
 
@@ -305,6 +311,114 @@ async def ws_settlement(
             "source": source,
             "transactions": transactions,
             # Des opérations en attente ne sont pas encore dans les soldes du serveur.
+            "pending": len(coordinator.queue.for_project(data.project.id)),
+        },
+    )
+
+
+def _day_start(value: str) -> int:
+    day = date.fromisoformat(value)
+    return int(datetime.combine(day, time.min, dt_util.get_default_time_zone()).timestamp())
+
+
+def _day_end(value: str) -> int:
+    day = date.fromisoformat(value)
+    return int(datetime.combine(day, time.max, dt_util.get_default_time_zone()).timestamp())
+
+
+def _iso_day(value: Any) -> str:
+    try:
+        date.fromisoformat(value)
+    except (TypeError, ValueError) as err:
+        raise vol.Invalid("date attendue au format AAAA-MM-JJ") from err
+    return value
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "cospend/statistics",
+        **_PROJECT_FIELDS,
+        vol.Optional("date_from"): _iso_day,
+        vol.Optional("date_to"): _iso_day,
+        vol.Optional("payer_id"): int,
+        vol.Optional("ower_id"): int,
+        vol.Optional("category_id"): int,
+        vol.Optional("payment_mode_id"): int,
+        vol.Optional("amount_min"): vol.Coerce(float),
+        vol.Optional("amount_max"): vol.Coerce(float),
+        vol.Optional("include_reimbursements", default=False): bool,
+    }
+)
+@callback
+def ws_statistics(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Totaux par membre, catégorie, mode de paiement et mois, et flux pour le Sankey."""
+    found = _find(hass, msg["project_id"], msg.get("entry_id"))
+    if found is None:
+        connection.send_error(msg["id"], websocket_api.ERR_NOT_FOUND, "Projet introuvable")
+        return
+    coordinator, data = found
+    flt = StatsFilter(
+        ts_min=_day_start(msg["date_from"]) if "date_from" in msg else None,
+        ts_max=_day_end(msg["date_to"]) if "date_to" in msg else None,
+        payer_id=msg.get("payer_id"),
+        ower_id=msg.get("ower_id"),
+        category_id=msg.get("category_id"),
+        payment_mode_id=msg.get("payment_mode_id"),
+        amount_min=msg.get("amount_min"),
+        amount_max=msg.get("amount_max"),
+        include_reimbursements=msg["include_reimbursements"],
+    )
+    stats = compute_statistics(data.bills.values(), flt, dt_util.get_default_time_zone())
+
+    to_category: dict[tuple[str, str], float] = {}
+    to_ower: dict[tuple[str, str], float] = {}
+    for flow in stats.flows:
+        payer, category, ower = (
+            f"payer:{flow.payer_id}",
+            f"category:{flow.category_id}",
+            f"ower:{flow.ower_id}",
+        )
+        to_category[(payer, category)] = to_category.get((payer, category), 0.0) + flow.amount
+        to_ower[(category, ower)] = to_ower.get((category, ower), 0.0) + flow.amount
+    links = [
+        {"source": source, "target": target, "value": round(value, 2)}
+        for (source, target), value in {**to_category, **to_ower}.items()
+        if round(value, 2) > 0
+    ]
+
+    connection.send_result(
+        msg["id"],
+        {
+            "total": round(stats.total, 2),
+            "count": stats.count,
+            "members": [
+                {
+                    "id": m.id,
+                    "paid": round(m.paid, 2),
+                    "spent": round(m.spent, 2),
+                    "balance": round(m.balance, 2),
+                }
+                for m in stats.members
+            ],
+            "categories": [
+                {"id": cid, "total": round(total, 2)}
+                for cid, total in sorted(stats.categories.items(), key=lambda kv: -kv[1])
+            ],
+            "payment_modes": [
+                {"id": mid, "total": round(total, 2)}
+                for mid, total in sorted(stats.payment_modes.items(), key=lambda kv: -kv[1])
+            ],
+            "months": [
+                {
+                    "month": m.month,
+                    "total": round(m.total, 2),
+                    "by_category": {str(c): round(v, 2) for c, v in m.by_category.items()},
+                }
+                for m in stats.months
+            ],
+            "links": links,
             "pending": len(coordinator.queue.for_project(data.project.id)),
         },
     )

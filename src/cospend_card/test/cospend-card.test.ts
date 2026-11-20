@@ -79,6 +79,17 @@ function makeHass(projects: Project[], bills: BillItem[], onWrite?: (m: Record<s
             items: items.slice(offset, offset + limit),
           } as T;
         }
+        case "cospend/statistics":
+          return {
+            total: 0,
+            count: 0,
+            members: [],
+            categories: [],
+            payment_modes: [],
+            months: [],
+            links: [],
+            pending: 0,
+          } as T;
         case "cospend/settlement":
           return {
             source: "server",
@@ -517,6 +528,33 @@ describe("remboursements", () => {
     const { hass } = makeHass([project()], []);
     const card = await mount(hass, { show_settlement: false });
     expect(card.shadowRoot!.querySelector("button.settle")).toBeNull();
+  });
+});
+
+describe("statistiques", () => {
+  const click = (card: Card, selector: string) =>
+    (card.shadowRoot!.querySelector(selector) as HTMLElement).click();
+  beforeEach(() => {
+    document.body.innerHTML = "";
+  });
+
+  it("ouvre la vue Statistiques puis revient à la liste", async () => {
+    const { hass } = makeHass([project()], []);
+    const card = await mount(hass);
+    click(card, "button.stats");
+    await settle(card);
+    expect(card.shadowRoot!.querySelector("cospend-stats")).not.toBeNull();
+    expect(card.shadowRoot!.querySelector("button.stats")).toBeNull();
+    card.shadowRoot!.querySelector("cospend-stats")!.dispatchEvent(new CustomEvent("close"));
+    await settle(card);
+    expect(card.shadowRoot!.querySelector("cospend-stats")).toBeNull();
+    expect(card.shadowRoot!.querySelector("button.stats")).not.toBeNull();
+  });
+
+  it("masque le bouton avec show_stats: false", async () => {
+    const { hass } = makeHass([project()], []);
+    const card = await mount(hass, { show_stats: false });
+    expect(card.shadowRoot!.querySelector("button.stats")).toBeNull();
   });
 });
 
