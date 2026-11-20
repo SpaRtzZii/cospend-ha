@@ -675,6 +675,9 @@
     },
     "member_exists": {
       "message": "Un membre actif nommé « {name} » existe déjà."
+    },
+    "manage_unreachable": {
+      "message": "Nextcloud est injoignable : cette modification n'est pas mise en file d'attente, réessayez quand le serveur est de retour."
     }
   },
   "issues": {

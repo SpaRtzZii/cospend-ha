@@ -310,9 +310,15 @@ class CospendCard extends LitElement {
     }
   }
 
-  /** Gérer membres, catégories, modes de paiement et devises : niveau gestionnaire (3) minimum. */
+  /**
+   * Réglages du projet (membres, catégories, modes de paiement, devises).
+   *
+   * Il faut le niveau gestionnaire (3) sur Nextcloud ; ensuite la roue est visible de tous si
+   * l'option ``allow_manage`` est cochée, sinon des seuls administrateurs de Home Assistant.
+   */
   private _canManage(project: Project): boolean {
-    return this._canWrite(project) && project.access_level >= 3;
+    const allowed = this._config?.allow_manage === true || this.hass?.user?.is_admin === true;
+    return allowed && this._canWrite(project) && project.access_level >= 3;
   }
 
   private _canWrite(project: Project): boolean {

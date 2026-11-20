@@ -208,3 +208,14 @@ async def test_data_is_refreshed_even_when_the_request_fails(
     with pytest.raises(HomeAssistantError):
         await call(hass, "add_member", name="Zoé")
     assert refreshes - before >= 2  # une fois avant l'appel, une fois après l'échec
+
+
+async def test_unreachable_server_gives_a_clear_message(
+    hass: HomeAssistant, init_integration, fake_client: FakeClient
+) -> None:
+    from aiocospend import CospendConnectionError
+
+    fake_client.write_error = CospendConnectionError("Connexion impossible")
+    with pytest.raises(HomeAssistantError) as info:
+        await call(hass, "add_category", name="Sport")
+    assert info.value.translation_key == "manage_unreachable"

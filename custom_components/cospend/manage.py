@@ -12,9 +12,17 @@ from typing import Any
 
 import voluptuous as vol
 from homeassistant.core import HomeAssistant, ServiceCall, ServiceResponse, SupportsResponse
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import config_validation as cv
 
-from aiocospend import CospendClient, Project, ResolutionError, resolve_member
+from aiocospend import (
+    CospendClient,
+    CospendConnectionError,
+    CospendMaintenanceError,
+    Project,
+    ResolutionError,
+    resolve_member,
+)
 from aiocospend.const import DEFAULT_COLOR
 from aiocospend.writer import _match
 
@@ -104,6 +112,10 @@ async def _manage(
         raise _error("member_exists", name=str(err)) from err
     except ValueError as err:
         raise _error("invalid_value", error=err) from err
+    except (CospendConnectionError, CospendMaintenanceError) as err:
+        raise HomeAssistantError(
+            translation_domain=DOMAIN, translation_key="manage_unreachable"
+        ) from err
     except Exception as err:  # noqa: BLE001 - traduite pour l'utilisateur
         raise await _translate(hass, coordinator, err) from err
     finally:

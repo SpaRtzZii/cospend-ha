@@ -5,6 +5,11 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 ## [Non publié]
 
 ### Corrigé (M6c, d'après les essais sur serveur réel)
+- Nouvelle option de carte `allow_manage` (case dans l'éditeur visuel) : cochée, la roue crantée
+  des réglages du projet est ouverte à tous les utilisateurs de Home Assistant ; décochée (défaut),
+  elle est réservée aux administrateurs. Le niveau gestionnaire Nextcloud reste exigé.
+- Serveur injoignable pendant une gestion de projet : message clair (« non mise en file d'attente »)
+  au lieu de l'erreur réseau brute.
 - Modification d'une catégorie, d'un mode de paiement ou d'une devise : erreur HTTP 400. Cospend
   attend l'objet complet (nom, icône et couleur ; nom et taux) : les services renvoient désormais
   l'état actuel complété par les changements. Même principe pour un membre, dont la couleur
