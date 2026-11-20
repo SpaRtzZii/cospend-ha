@@ -1,4 +1,11 @@
-import type { BillItem, BillsPage, HassLike, Project, WriteResult } from "./types";
+import type {
+  BillItem,
+  BillsPage,
+  HassLike,
+  Project,
+  SettlementPlan,
+  WriteResult,
+} from "./types";
 
 export async function fetchProjects(hass: HassLike): Promise<Project[]> {
   const result = await hass.callWS<{ projects: Project[] }>({ type: "cospend/projects" });
@@ -30,6 +37,17 @@ export function fetchBill(
     project_id: project.id,
     entry_id: project.entry_id,
     bill_id: billId,
+  });
+}
+
+export function fetchSettlement(
+  hass: HassLike,
+  project: Pick<Project, "id" | "entry_id">,
+): Promise<SettlementPlan> {
+  return hass.callWS<SettlementPlan>({
+    type: "cospend/settlement",
+    project_id: project.id,
+    entry_id: project.entry_id,
   });
 }
 

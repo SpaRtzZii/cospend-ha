@@ -79,6 +79,12 @@ function makeHass(projects: Project[], bills: BillItem[], onWrite?: (m: Record<s
             items: items.slice(offset, offset + limit),
           } as T;
         }
+        case "cospend/settlement":
+          return {
+            source: "server",
+            transactions: [{ from_id: 2, to_id: 1, amount: 40 }],
+            pending: 0,
+          } as T;
         case "cospend/bill": {
           const found = bills.find((b) => b.id === message.bill_id)!;
           return {
@@ -433,7 +439,7 @@ describe("gestion du projet", () => {
     ...hass,
     user: { name: "Quentin", is_admin: isAdmin },
   });
-  const gear = (card: Card) => card.shadowRoot!.querySelector("button.gear");
+  const gear = (card: Card) => card.shadowRoot!.querySelector("button.gear.manage");
 
   it("réserve la roue aux administrateurs tant que l'option n'est pas cochée", async () => {
     const { hass } = makeHass([project()], []);
@@ -462,17 +468,55 @@ describe("gestion du projet", () => {
   it("ouvre l'écran de gestion, annonce la modification puis le ferme", async () => {
     const { hass } = makeHass([project()], []);
     const card = await mount(as(hass, true));
-    click(card, "button.gear");
+    click(card, "button.gear.manage");
     await settle(card);
     const manage = card.shadowRoot!.querySelector("cospend-manage")!;
     expect(manage).not.toBeNull();
-    expect(card.shadowRoot!.querySelector("button.gear")).toBeNull();
+    expect(card.shadowRoot!.querySelector("button.gear.manage")).toBeNull();
     manage.dispatchEvent(new CustomEvent("changed", { detail: { text: "Ajouté" } }));
     await settle(card);
     expect(text(card)).toContain("Ajouté");
     manage.dispatchEvent(new CustomEvent("close"));
     await settle(card);
     expect(card.shadowRoot!.querySelector("cospend-manage")).toBeNull();
+  });
+});
+
+describe("remboursements", () => {
+  const click = (card: Card, selector: string) =>
+    (card.shadowRoot!.querySelector(selector) as HTMLElement).click();
+  beforeEach(() => {
+    document.body.innerHTML = "";
+  });
+
+  it("ouvre l'écran des remboursements puis revient à la liste", async () => {
+    const { hass } = makeHass([project()], []);
+    const card = await mount(hass);
+    click(card, "button.settle");
+    await settle(card);
+    expect(card.shadowRoot!.querySelector("cospend-settlement")).not.toBeNull();
+    expect(card.shadowRoot!.querySelector("button.settle")).toBeNull();
+    card.shadowRoot!.querySelector("cospend-settlement")!.dispatchEvent(new CustomEvent("close"));
+    await settle(card);
+    expect(card.shadowRoot!.querySelector("cospend-settlement")).toBeNull();
+  });
+
+  it("annonce l'enregistrement d'un remboursement", async () => {
+    const { hass } = makeHass([project()], []);
+    const card = await mount(hass);
+    click(card, "button.settle");
+    await settle(card);
+    card.shadowRoot!
+      .querySelector("cospend-settlement")!
+      .dispatchEvent(new CustomEvent("changed", { detail: { text: "Remboursement enregistré" } }));
+    await settle(card);
+    expect(text(card)).toContain("Remboursement enregistré");
+  });
+
+  it("masque le bouton avec show_settlement: false", async () => {
+    const { hass } = makeHass([project()], []);
+    const card = await mount(hass, { show_settlement: false });
+    expect(card.shadowRoot!.querySelector("button.settle")).toBeNull();
   });
 });
 

@@ -61,6 +61,7 @@ class CospendCardEditor extends LitElement {
       { name: "show_bills", selector: { boolean: {} } },
       { name: "show_search", selector: { boolean: {} } },
       { name: "allow_write", selector: { boolean: {} } },
+      { name: "show_settlement", selector: { boolean: {} } },
       { name: "allow_manage", selector: { boolean: {} } },
       { name: "page_size", selector: { number: { min: 5, max: 100, step: 5, mode: "box" } } },
     ];
@@ -75,6 +76,7 @@ class CospendCardEditor extends LitElement {
       show_bills: config?.show_bills ?? true,
       show_search: config?.show_search ?? true,
       allow_write: config?.allow_write ?? true,
+      show_settlement: config?.show_settlement ?? true,
       allow_manage: config?.allow_manage ?? false,
       page_size: config?.page_size ?? 20,
     };
@@ -93,7 +95,7 @@ class CospendCardEditor extends LitElement {
     const project = this._projects.find((item) => item.id === config.project);
     if (project) config.entry_id = project.entry_id;
     else delete config.entry_id;
-    for (const key of ["show_balances", "show_bills", "show_search", "allow_write", "allow_manage"] as const) {
+    for (const key of ["show_balances", "show_bills", "show_search", "allow_write", "show_settlement", "allow_manage"] as const) {
       config[key] = value[key] !== false;
     }
     config.page_size = Number(value.page_size) || 20;

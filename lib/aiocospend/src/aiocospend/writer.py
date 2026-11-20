@@ -21,7 +21,13 @@ from datetime import datetime
 from decimal import Decimal
 from typing import TYPE_CHECKING, Any
 
-from .const import NO_CATEGORY_ID, NO_PAYMENT_MODE_ID, REPEAT_CODES, REPEAT_NONE
+from .const import (
+    NO_CATEGORY_ID,
+    NO_PAYMENT_MODE_ID,
+    REIMBURSEMENT_CATEGORY_ID,
+    REPEAT_CODES,
+    REPEAT_NONE,
+)
 from .currency import ForeignAmount, join_comment, split_comment
 from .exceptions import (
     CospendConnectionError,
@@ -81,6 +87,9 @@ def resolve_member(project: Project, ref: str | int) -> int:
 def resolve_category(project: Project, ref: str | int | None) -> int:
     if ref in (None, ""):
         return NO_CATEGORY_ID
+    # Catégorie interne des remboursements : absente de la liste des catégories du projet.
+    if str(ref).strip() == str(REIMBURSEMENT_CATEGORY_ID):
+        return REIMBURSEMENT_CATEGORY_ID
     return _match({c.id: c.name for c in project.categories}, ref, "catégorie")
 
 

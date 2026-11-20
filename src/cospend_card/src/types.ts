@@ -104,9 +104,26 @@ export interface CospendCardConfig {
   allow_write?: boolean;
   /** Réglages du projet (roue crantée) ouverts à tous les utilisateurs ; sinon, aux seuls administrateurs. */
   allow_manage?: boolean;
+  /** Bouton « Remboursements » (plan pour solder les comptes) ; vrai par défaut. */
+  show_settlement?: boolean;
 }
 
 /** Réponse des services d'écriture (voir services.py). */
+/** Remboursement proposé : ``from_id`` doit ``amount`` à ``to_id``. */
+export interface SettlementTransaction {
+  from_id: number;
+  to_id: number;
+  amount: number;
+}
+
+export interface SettlementPlan {
+  /** ``server`` : plan de Cospend ; ``local`` : calcul de repli (Nextcloud n'a pas répondu). */
+  source: "server" | "local";
+  transactions: SettlementTransaction[];
+  /** Opérations en attente, pas encore dans les soldes du serveur. */
+  pending: number;
+}
+
 export interface WriteResult {
   project?: string;
   bill_ids?: number[];
