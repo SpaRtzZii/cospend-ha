@@ -4,6 +4,20 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 
 ## [Non publié]
 
+### Ajouté (jalon M6b : modification, répartitions, devises, répétition)
+- Bouton « Modifier » dans le détail d'une dépense : formulaire prérempli, seuls les champs
+  changés sont envoyés (la date inchangée n'est pas renvoyée, pour ne pas perdre l'heure).
+- Création avec répartition par **montants** ou par **pourcentages** (total des parts contrôlé).
+- Montant dans une **devise étrangère** (taux repris du projet, modifiable, aperçu de la
+  conversion) ; la devise d'origine est reprise à la modification.
+- **Répétition** (jour, semaine, mois, année…, fréquence, date de fin, tous les membres actifs).
+- Service `update_bill` : nouveaux champs `currency`, `exchange_rate`, `repeat`,
+  `repeat_frequency`, `repeat_until`, `repeat_all_active`. Bibliothèque `aiocospend` 0.5.0.
+- Limites : le montant, les participants et la devise d'une répartition personnalisée ne se
+  modifient pas (supprimer puis recréer) ; modifier une dépense aux poids inégaux remet les poids
+  à égalité (la carte prévient) ; l'effacement de la date de fin de répétition reste à vérifier
+  sur un vrai serveur.
+
 ### Ajouté (jalon M6a : écriture depuis la carte)
 - Bouton « Ajouter une dépense » : formulaire avec titre, montant ou calcul (aperçu du résultat),
   payeur (par défaut le membre du même nom que l'utilisateur connecté), participants, date,

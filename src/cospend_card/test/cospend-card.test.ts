@@ -345,6 +345,46 @@ describe("écriture", () => {
     expect(text(card)).toContain("Dépense supprimée");
   });
 
+  it("modifie une dépense depuis son détail et revient au détail à jour", async () => {
+    const writes: Array<Record<string, unknown>> = [];
+    const { hass } = makeHass([project()], [bill(1, "Courses")], (message) => {
+      writes.push(message);
+      return { bill_ids: [1] };
+    });
+    const card = await mount(hass);
+    click(card, ".row");
+    await settle(card);
+    click(card, ".detail-actions .secondary");
+    await settle(card);
+    const form = card.shadowRoot!.querySelector("cospend-bill-form")!;
+    expect(form.shadowRoot!.querySelector("h2")!.textContent).toContain("Modifier");
+    form.dispatchEvent(new CustomEvent("saved", { detail: { edited: true, queued: false } }));
+    await settle(card);
+    expect(card.shadowRoot!.querySelector("cospend-bill-form")).toBeNull();
+    expect(card.shadowRoot!.querySelector(".detail")).not.toBeNull(); // retour au détail
+    expect(text(card)).toContain("Dépense modifiée");
+  });
+
+  it("annule la modification et retrouve le détail", async () => {
+    const { hass } = makeHass([project()], [bill(1, "Courses")]);
+    const card = await mount(hass);
+    click(card, ".row");
+    await settle(card);
+    click(card, ".detail-actions .secondary");
+    await settle(card);
+    card.shadowRoot!.querySelector("cospend-bill-form")!.dispatchEvent(new CustomEvent("cancel"));
+    await settle(card);
+    expect(card.shadowRoot!.querySelector(".detail")).not.toBeNull();
+    // un ajout ouvert ensuite est bien un formulaire vierge
+    click(card, ".back");
+    await settle(card);
+    click(card, "button.add");
+    await settle(card);
+    expect(
+      card.shadowRoot!.querySelector("cospend-bill-form")!.shadowRoot!.querySelector("h2")!.textContent,
+    ).toContain("Nouvelle");
+  });
+
   it("annule la suppression", async () => {
     const writes: unknown[] = [];
     const { hass } = makeHass([project()], [bill(1, "Courses")], (m) => writes.push(m));
