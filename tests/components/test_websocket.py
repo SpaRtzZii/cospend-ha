@@ -231,3 +231,40 @@ async def test_uneven_weights_are_reported(
     ]
     assert detail["uneven_weights"] is True
     assert [share["amount"] for share in detail["shares"]] == [60.0, 30.0]
+
+
+async def test_settlement_from_the_server(
+    hass: HomeAssistant, init_integration, hass_ws_client
+) -> None:
+    client = await hass_ws_client(hass)
+    response = await _call(client, {"type": "cospend/settlement", "project_id": "teste"})
+    assert response["success"]
+    result = response["result"]
+    assert result["source"] == "server"
+    assert result["pending"] == 0
+    assert result["transactions"] == [
+        {"from_id": 14, "to_id": 12, "amount": 666.67},
+        {"from_id": 13, "to_id": 12, "amount": 16.67},
+    ]
+
+
+async def test_settlement_falls_back_to_a_local_plan(
+    hass: HomeAssistant, init_integration, hass_ws_client, fake_client: FakeClient
+) -> None:
+    from aiocospend import CospendConnectionError
+
+    fake_client.settlement_error = CospendConnectionError("hors ligne")
+    client = await hass_ws_client(hass)
+    result = (await _call(client, {"type": "cospend/settlement", "project_id": "teste"}))["result"]
+    assert result["source"] == "local"
+    assert result["transactions"]
+    assert all(t["amount"] > 0 and t["from_id"] != t["to_id"] for t in result["transactions"])
+
+
+async def test_settlement_unknown_project(
+    hass: HomeAssistant, init_integration, hass_ws_client
+) -> None:
+    client = await hass_ws_client(hass)
+    response = await _call(client, {"type": "cospend/settlement", "project_id": "autre"})
+    assert not response["success"]
+    assert response["error"]["code"] == "not_found"

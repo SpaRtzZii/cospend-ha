@@ -32,6 +32,7 @@ import type {
 } from "./types";
 import "./bill-form";
 import "./manage";
+import "./settlement";
 import "./cospend-card-editor";
 
 const DEFAULT_PAGE_SIZE = 20;
@@ -53,6 +54,7 @@ class CospendCard extends LitElement {
     _detail: { state: true },
     _form: { state: true },
     _manage: { state: true },
+    _settle: { state: true },
     _editing: { state: true },
     _confirming: { state: true },
     _busy: { state: true },
@@ -72,6 +74,7 @@ class CospendCard extends LitElement {
   declare _detail: BillItem | null;
   declare _form: boolean;
   declare _manage: boolean;
+  declare _settle: boolean;
   declare _editing: boolean;
   declare _confirming: boolean;
   declare _busy: boolean;
@@ -98,6 +101,7 @@ class CospendCard extends LitElement {
     this._detail = null;
     this._form = false;
     this._manage = false;
+    this._settle = false;
     this._editing = false;
     this._confirming = false;
     this._busy = false;
@@ -376,7 +380,18 @@ class CospendCard extends LitElement {
     if (!this._projects) return this._shell(title, html`<p class="hint">${this._t("loading")}</p>`);
     if (!this._project) return this._shell(title, html`<p class="hint">${this._t("no_projects")}</p>`);
     const project = this._project;
-    const body = this._manage
+    const body = this._settle
+      ? html`<cospend-settlement
+          .hass=${this.hass}
+          .project=${project}
+          .canWrite=${this._canWrite(project)}
+          @close=${() => (this._settle = false)}
+          @changed=${(event: CustomEvent<{ text: string }>) => {
+            this._announce("ok", event.detail.text);
+            void this._refresh();
+          }}
+        ></cospend-settlement>`
+      : this._manage
       ? html`<cospend-manage
           .hass=${this.hass}
           .project=${project}
@@ -428,9 +443,22 @@ class CospendCard extends LitElement {
                 ${this._t("pending_count", { count: project.pending })}
               </span>`
             : nothing}
-          ${project && this._canManage(project) && !this._form && !this._manage
+          ${project && this._config?.show_settlement !== false && !this._form && !this._manage && !this._settle
             ? html`<button
-                class="gear"
+                class="gear settle"
+                aria-label=${this._t("settlement")}
+                title=${this._t("settlement")}
+                @click=${() => {
+                  this._detail = null;
+                  this._settle = true;
+                }}
+              >
+                <ha-icon icon="mdi:swap-horizontal"></ha-icon>
+              </button>`
+            : nothing}
+          ${project && this._canManage(project) && !this._form && !this._manage && !this._settle
+            ? html`<button
+                class="gear manage"
                 aria-label=${this._t("manage")}
                 title=${this._t("manage")}
                 @click=${() => {

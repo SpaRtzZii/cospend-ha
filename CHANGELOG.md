@@ -4,6 +4,17 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 
 ## [Non publié]
 
+### Ajouté (jalon M7a : plan de remboursement)
+- Bouton « Remboursements » dans la carte (option `show_settlement`, active par défaut) : plan de
+  Cospend (qui doit combien à qui), vos remboursements en premier, avec avertissement quand des
+  opérations sont en attente. Hors Nextcloud, le plan est calculé localement.
+- « Rembourser » enregistre la dépense correspondante (payée par le débiteur, au profit du
+  créditeur, catégorie Remboursement) après confirmation ; mise en file d'attente hors ligne.
+- Commande websocket `cospend/settlement`.
+- Bibliothèque `aiocospend` 0.7.0 : `suggest_settlement` (plan local, en centimes) et prise en
+  charge de la catégorie Remboursement (−11) à la création d'une dépense.
+- À vérifier sur un vrai serveur : l'acceptation de la catégorie −11 à la création.
+
 ### Corrigé (M6c, d'après les essais sur serveur réel)
 - Nouvelle option de carte `allow_manage` (case dans l'éditeur visuel) : cochée, la roue crantée
   des réglages du projet est ouverte à tous les utilisateurs de Home Assistant ; décochée (défaut),

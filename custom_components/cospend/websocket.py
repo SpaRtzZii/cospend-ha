@@ -1,7 +1,7 @@
 """API websocket utilisée par la carte Lovelace (lecture seule).
 
-Les commandes ne renvoient que des données déjà en mémoire dans le coordinateur : aucune ne
-fait d'appel réseau vers Nextcloud.
+Les commandes renvoient des données déjà en mémoire dans le coordinateur, sauf
+``cospend/settlement`` qui interroge Nextcloud (avec un calcul local de repli).
 """
 
 from __future__ import annotations
@@ -14,7 +14,15 @@ from homeassistant.components import websocket_api
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant, callback
 
-from aiocospend import Bill, GroupedBill, Project, group_bills, split_comment
+from aiocospend import (
+    Bill,
+    CospendError,
+    GroupedBill,
+    Project,
+    group_bills,
+    split_comment,
+    suggest_settlement,
+)
 
 from .const import DOMAIN
 from .coordinator import CospendCoordinator, ProjectData
@@ -28,6 +36,7 @@ def async_setup_websocket(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_projects)
     websocket_api.async_register_command(hass, ws_bills)
     websocket_api.async_register_command(hass, ws_bill)
+    websocket_api.async_register_command(hass, ws_settlement)
     websocket_api.async_register_command(hass, ws_subscribe)
 
 
@@ -264,6 +273,39 @@ def ws_bill(
         return
     connection.send_result(
         msg["id"], _serialize_bill(group, data.project, coordinator, detail=True)
+    )
+
+
+@websocket_api.websocket_command({vol.Required("type"): "cospend/settlement", **_PROJECT_FIELDS})
+@websocket_api.async_response
+async def ws_settlement(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Plan de remboursement : celui de Cospend, ou un calcul local si le serveur ne répond pas."""
+    found = _find(hass, msg["project_id"], msg.get("entry_id"))
+    if found is None:
+        connection.send_error(msg["id"], websocket_api.ERR_NOT_FOUND, "Projet introuvable")
+        return
+    coordinator, data = found
+    source = "server"
+    try:
+        plan = (await coordinator.client.get_settlement(data.project.id)).transactions
+    except CospendError:
+        source = "local"
+        plan = suggest_settlement(data.project.balance)
+    transactions = [
+        {"from_id": t.from_member, "to_id": t.to_member, "amount": round(t.amount, 2)}
+        for t in plan
+        if round(t.amount, 2) > 0
+    ]
+    connection.send_result(
+        msg["id"],
+        {
+            "source": source,
+            "transactions": transactions,
+            # Des opérations en attente ne sont pas encore dans les soldes du serveur.
+            "pending": len(coordinator.queue.for_project(data.project.id)),
+        },
     )
 
 

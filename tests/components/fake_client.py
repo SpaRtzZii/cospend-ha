@@ -12,7 +12,15 @@ from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
-from aiocospend import Bill, BillsPage, Ower, Project, ProjectStatistics, ServerInfo
+from aiocospend import (
+    Bill,
+    BillsPage,
+    Ower,
+    Project,
+    ProjectStatistics,
+    ServerInfo,
+    Settlement,
+)
 
 FIXTURES = Path(__file__).resolve().parents[2] / "lib" / "aiocospend" / "tests" / "fixtures"
 
@@ -35,6 +43,7 @@ class FakeClient:
         self.statistics_calls = 0
         self.calls: list[tuple[str, tuple, dict]] = []
         self.write_error: Exception | None = None
+        self.settlement_error: Exception | None = None
 
     def _check(self) -> None:
         if self.error is not None:
@@ -74,6 +83,11 @@ class FakeClient:
             all_bill_ids=tuple(sorted(self.bills)),
             timestamp=self.clock,
         )
+
+    async def get_settlement(self, project_id: str, **_: Any) -> Settlement:
+        if self.settlement_error is not None:
+            raise self.settlement_error
+        return Settlement.from_api(load("settlement.json"))
 
     async def get_statistics(self, project_id: str, **_: Any) -> ProjectStatistics:
         self._check()

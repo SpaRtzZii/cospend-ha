@@ -34,6 +34,7 @@ from .models import (
     Share,
     Transaction,
 )
+from .settlement import suggest_settlement
 from .splits import SplitError, SplitMode, SplitPart, compute_split
 from .sync import BillChanges, ProjectBills
 from .utils import compare_versions, format_amount, normalize_url, parse_version
@@ -58,7 +59,7 @@ from .writer import (
     update_bill,
 )
 
-__version__ = "0.6.1"
+__version__ = "0.7.0"
 
 __all__ = [
     "execute_creates",
@@ -86,6 +87,7 @@ __all__ = [
     "join_comment",
     "parse_amount",
     "resolve_category",
+    "suggest_settlement",
     "resolve_member",
     "resolve_owers",
     "resolve_payment_mode",
