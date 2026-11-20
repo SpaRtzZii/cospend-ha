@@ -26,6 +26,7 @@ from aiocospend import (
 
 from .const import DOMAIN
 from .coordinator import CospendCoordinator, ProjectData
+from .dates import bill_local_date
 
 DEFAULT_PAGE_SIZE = 30
 MAX_PAGE_SIZE = 100
@@ -132,7 +133,7 @@ def _serialize_bill(
         "is_group": group.is_group,
         "what": bill.what,
         "amount": group.total,
-        "date": bill.date,
+        "date": bill_local_date(bill),
         "timestamp": bill.timestamp,
         "payer_id": bill.payer_id,
         "ower_ids": list(group.ower_ids),

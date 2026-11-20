@@ -35,6 +35,7 @@ from .const import (
     EVENT_BILL_DELETED,
     EVENT_BILL_UPDATED,
 )
+from .dates import bill_local_date
 from .queue import OperationQueue
 
 _LOGGER = logging.getLogger(__name__)
@@ -131,7 +132,7 @@ def bill_event_data(project: Project, bill: Bill) -> dict[str, Any]:
         "bill_id": bill.id,
         "what": bill.what,
         "amount": bill.amount,
-        "date": bill.date,
+        "date": bill_local_date(bill),
         "timestamp": bill.timestamp,
         "comment": bill.comment,
         "payer_id": bill.payer_id,
