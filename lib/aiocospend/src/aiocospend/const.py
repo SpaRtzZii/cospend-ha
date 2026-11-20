@@ -23,3 +23,6 @@ REPEAT_CODES: Final = ("n", "d", "w", "b", "s", "m", "y")
 
 # Niveaux d'accès à un projet (4 = propriétaire, constaté sur le serveur de test).
 ACCESS_LEVEL_OWNER: Final = 4
+
+# Couleur proposée (Cospend en exige une) pour une catégorie ou un mode de paiement.
+DEFAULT_COLOR: Final = "#888888"

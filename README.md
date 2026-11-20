@@ -55,7 +55,9 @@ and the detail of each expense with everyone's share. It updates on its own and 
 operations still waiting in the offline queue. You can add an expense (title, amount or calculation such as `12,5 + 7`, payer, participants,
 date, category, payment mode, comment), split it evenly, by amounts or by percentages, enter it in
 a foreign currency, make it repeat, edit it later and delete it after a confirmation (it goes to the
-Nextcloud trash). Offline, the operation is queued like any service call. The amount, participants
+Nextcloud trash). Offline, the operation is queued like any service call. With maintainer access, a
+gear button opens the project settings: members, categories, payment modes and currencies (these
+changes need a connection to Nextcloud). The amount, participants
 and currency of a custom-split expense cannot be edited: delete it and create it again. Set `allow_write: false`
 for a read-only dashboard. The card is built when a release is published: a copy of the repository
 without a release has the integration but no card.
@@ -67,6 +69,14 @@ without a release has the integration but no card.
 | `cospend.add_bill` | Add an expense. `amount` can be a calculation (`12,5 + 7`). `split_mode`: `even` (one bill), `amounts` or `percent` (one bill per participant, like Cowspent, with `shares`). Optional `currency` + `exchange_rate`, `category`, `payment_mode`, `date`, `comment`, `repeat`. |
 | `cospend.update_bill` | Change some fields of a bill. The amount and participants of a custom-split bill cannot be changed (delete and recreate it). |
 | `cospend.delete_bill` | Move a bill to the Cospend trash (the whole custom-split group by default). |
+| `cospend.add_member` / `update_member` / `delete_member` | Manage the project's members (name, weight, color, active). A member who has bills is disabled by Cospend instead of deleted. |
+| `cospend.add_category` / `update_category` / `delete_category` | Manage categories (name, emoji icon, `#rrggbb` color). |
+| `cospend.add_payment_mode` / `update_payment_mode` / `delete_payment_mode` | Same for payment modes. |
+| `cospend.add_currency` / `update_currency` / `delete_currency` | Manage secondary currencies and their exchange rate. |
+
+The management services need **maintainer** access on the project and are **not queued** when
+Nextcloud is unreachable: they fail instead, because replaying an addition or a deletion later could
+create duplicates or hit another item.
 
 Members, categories and payment modes can be given by name or identifier. Each service returns
 the identifiers of the affected bills. A multi-bill operation that fails halfway is never retried
@@ -148,7 +158,7 @@ avec les mêmes fonctionnalités que l'application Android [Cowspent](https://gi
 
 Connexion : adresse web (http / https) **ou** adresse IP locale + port, au choix, à l'installation comme à la reconfiguration. Avec une IP, ajoutez-la aux `trusted_domains` de Nextcloud (`occ config:system:set trusted_domains 2 --value=192.168.1.20`).
 
-Carte Lovelace (`custom:cospend-card`) : soldes, liste des dépenses (répartitions personnalisées regroupées), recherche et détail avec la part de chacun. Elle suit le thème de Home Assistant, se met à jour toute seule et s'ajoute depuis le sélecteur de cartes (éditeur visuel inclus). On peut y ajouter une dépense (répartition égale, par montants ou par pourcentages, devise étrangère, répétition), la modifier et la supprimer après confirmation (corbeille de Nextcloud) ; hors ligne, l'opération est mise en file d'attente. Le montant, les participants et la devise d'une répartition personnalisée ne se modifient pas (supprimer puis recréer). `allow_write: false` rend la carte en lecture seule.
+Carte Lovelace (`custom:cospend-card`) : soldes, liste des dépenses (répartitions personnalisées regroupées), recherche et détail avec la part de chacun. Elle suit le thème de Home Assistant, se met à jour toute seule et s'ajoute depuis le sélecteur de cartes (éditeur visuel inclus). On peut y ajouter une dépense (répartition égale, par montants ou par pourcentages, devise étrangère, répétition), la modifier et la supprimer après confirmation (corbeille de Nextcloud) ; hors ligne, l'opération est mise en file d'attente. Avec le niveau gestionnaire, une roue crantée ouvre les réglages du projet : membres, catégories, modes de paiement et devises (ces modifications exigent une connexion à Nextcloud). Le montant, les participants et la devise d'une répartition personnalisée ne se modifient pas (supprimer puis recréer). `allow_write: false` rend la carte en lecture seule.
 
 Prévu : choix des projets à connecter, services pour créer / modifier / supprimer des dépenses depuis
 les automatisations, mode hors ligne (file d'attente sans doublons), carte Lovelace complète.

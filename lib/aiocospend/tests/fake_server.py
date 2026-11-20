@@ -45,6 +45,7 @@ class FakeCospend:
     requests: list[RecordedRequest] = field(default_factory=list)
     clock: int = 1_794_780_000
     next_bill_id: int = 100
+    next_item_id: int = 500
     url: str = ""
     _form: dict[str, str] = field(default_factory=dict)
 
@@ -63,6 +64,10 @@ class FakeCospend:
         self.app.router.add_get(f"{API}/projects/{{pid}}/bills/{{bid}}", self._get_bill)
         self.app.router.add_put(f"{API}/projects/{{pid}}/bills/{{bid}}", self._update_bill)
         self.app.router.add_delete(f"{API}/projects/{{pid}}/bills/{{bid}}", self._delete_bill)
+        for kind in ("members", "categories", "paymentmodes", "currencies"):
+            self.app.router.add_post(f"{API}/projects/{{pid}}/{kind}", self._item_create)
+            self.app.router.add_put(f"{API}/projects/{{pid}}/{kind}/{{iid}}", self._item_update)
+            self.app.router.add_delete(f"{API}/projects/{{pid}}/{kind}/{{iid}}", self._item_delete)
         self.app.router.add_get(f"{API}/projects/{{pid}}/statistics", self._statistics)
         self.app.router.add_get(f"{API}/projects/{{pid}}/settlement", self._settlement)
 
@@ -265,6 +270,19 @@ class FakeCospend:
         else:
             del self.bills[bill["id"]]  # déjà en corbeille ou suppression définitive demandée
         return self._ok([])
+
+    # Structure du projet : on enregistre seulement les requêtes ; le fond n'est pas simulé.
+    async def _item_create(self, request: web.Request) -> web.Response:
+        if (error := self._check_project(request)) is not None:
+            return error
+        self.next_item_id += 1
+        return self._ok(self.next_item_id)
+
+    async def _item_update(self, request: web.Request) -> web.Response:
+        return self._check_project(request) or self._ok({})
+
+    async def _item_delete(self, request: web.Request) -> web.Response:
+        return self._check_project(request) or self._ok("OK")
 
     async def _statistics(self, request: web.Request) -> web.Response:
         return self._check_project(request) or self._ok(load_fixture("statistics.json"))

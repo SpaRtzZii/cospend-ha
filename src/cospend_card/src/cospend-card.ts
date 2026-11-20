@@ -31,6 +31,7 @@ import type {
   WriteResult,
 } from "./types";
 import "./bill-form";
+import "./manage";
 import "./cospend-card-editor";
 
 const DEFAULT_PAGE_SIZE = 20;
@@ -51,6 +52,7 @@ class CospendCard extends LitElement {
     _search: { state: true },
     _detail: { state: true },
     _form: { state: true },
+    _manage: { state: true },
     _editing: { state: true },
     _confirming: { state: true },
     _busy: { state: true },
@@ -69,6 +71,7 @@ class CospendCard extends LitElement {
   declare _search: string;
   declare _detail: BillItem | null;
   declare _form: boolean;
+  declare _manage: boolean;
   declare _editing: boolean;
   declare _confirming: boolean;
   declare _busy: boolean;
@@ -94,6 +97,7 @@ class CospendCard extends LitElement {
     this._search = "";
     this._detail = null;
     this._form = false;
+    this._manage = false;
     this._editing = false;
     this._confirming = false;
     this._busy = false;
@@ -306,6 +310,11 @@ class CospendCard extends LitElement {
     }
   }
 
+  /** Gérer membres, catégories, modes de paiement et devises : niveau gestionnaire (3) minimum. */
+  private _canManage(project: Project): boolean {
+    return this._canWrite(project) && project.access_level >= 3;
+  }
+
   private _canWrite(project: Project): boolean {
     return this._config?.allow_write !== false && project.can_write;
   }
@@ -361,7 +370,17 @@ class CospendCard extends LitElement {
     if (!this._projects) return this._shell(title, html`<p class="hint">${this._t("loading")}</p>`);
     if (!this._project) return this._shell(title, html`<p class="hint">${this._t("no_projects")}</p>`);
     const project = this._project;
-    const body = this._form
+    const body = this._manage
+      ? html`<cospend-manage
+          .hass=${this.hass}
+          .project=${project}
+          @close=${() => (this._manage = false)}
+          @changed=${(event: CustomEvent<{ text: string }>) => {
+            this._announce("ok", event.detail.text);
+            void this._refresh();
+          }}
+        ></cospend-manage>`
+      : this._form
       ? html`<cospend-bill-form
           .hass=${this.hass}
           .project=${project}
@@ -402,6 +421,19 @@ class CospendCard extends LitElement {
                 <ha-icon icon="mdi:cloud-upload-outline"></ha-icon>
                 ${this._t("pending_count", { count: project.pending })}
               </span>`
+            : nothing}
+          ${project && this._canManage(project) && !this._form && !this._manage
+            ? html`<button
+                class="gear"
+                aria-label=${this._t("manage")}
+                title=${this._t("manage")}
+                @click=${() => {
+                  this._detail = null;
+                  this._manage = true;
+                }}
+              >
+                <ha-icon icon="mdi:cog-outline"></ha-icon>
+              </button>`
             : nothing}
           ${chooser
             ? html`<select
@@ -817,6 +849,22 @@ class CospendCard extends LitElement {
     button.add ha-icon,
     button.danger ha-icon {
       --mdc-icon-size: 18px;
+    }
+    .gear {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      padding: 0;
+      color: var(--secondary-text-color);
+      background: none;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+    .gear:hover {
+      background: var(--secondary-background-color);
     }
     .detail-actions {
       display: flex;

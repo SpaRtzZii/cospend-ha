@@ -276,3 +276,53 @@ async def test_requests_carry_ocs_header_and_basic_auth(
 ) -> None:
     await client.get_projects()
     assert last_request(fake, "GET").path == f"{API}/projects"
+
+
+# ---------------------------------------------------------------- structure du projet
+
+
+async def test_create_member_and_category(client: CospendClient, fake: FakeCospend) -> None:
+    member = await client.create_member(PROJECT, "Zoé", weight=2, color="#112233")
+    request = last_request(fake, "POST")
+    assert request.path.endswith(f"/projects/{PROJECT}/members")
+    assert request.form == {"name": "Zoé", "weight": "2", "active": "1", "color": "#112233"}
+    category = await client.create_category(PROJECT, "Sport", icon="🎾")
+    assert category == member + 1
+    request = last_request(fake, "POST")
+    assert request.path.endswith("/categories")
+    assert request.form == {"name": "Sport", "icon": "🎾", "color": "#888888"}
+
+
+async def test_update_member_sends_only_given_fields(
+    client: CospendClient, fake: FakeCospend
+) -> None:
+    await client.update_member(PROJECT, 12, activated=False)
+    request = last_request(fake, "PUT")
+    assert request.path.endswith("/members/12")
+    assert request.form == {"activated": "false"}
+    await client.update_member(PROJECT, 12, name="Alice", weight=1.5)
+    assert last_request(fake, "PUT").form == {"name": "Alice", "weight": "1.5"}
+    with pytest.raises(ValueError):
+        await client.update_member(PROJECT, 12)
+
+
+async def test_payment_mode_and_currency_routes(client: CospendClient, fake: FakeCospend) -> None:
+    await client.create_payment_mode(PROJECT, "Espèces", icon="💵", color="#00aa00")
+    assert last_request(fake, "POST").path.endswith("/paymentmodes")
+    await client.update_payment_mode(PROJECT, 17, name="Cash")
+    assert last_request(fake, "PUT").path.endswith("/paymentmodes/17")
+    await client.create_currency(PROJECT, "USD", 0.92)
+    request = last_request(fake, "POST")
+    assert request.path.endswith("/currencies")
+    assert request.form == {"name": "USD", "rate": "0.92"}
+    await client.update_currency(PROJECT, 1, rate=0.9)
+    assert last_request(fake, "PUT").form == {"rate": "0.9"}
+
+
+async def test_delete_items_and_unknown_project(client: CospendClient, fake: FakeCospend) -> None:
+    await client.delete_category(PROJECT, 35)
+    assert last_request(fake, "DELETE").path.endswith("/categories/35")
+    await client.delete_currency(PROJECT, 1)
+    assert last_request(fake, "DELETE").path.endswith("/currencies/1")
+    with pytest.raises(CospendNotFoundError):
+        await client.delete_member("autre", 1)

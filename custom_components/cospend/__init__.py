@@ -26,6 +26,7 @@ from aiocospend import CospendClient
 
 from .const import DOMAIN, FLUSH_INTERVAL_SECONDS
 from .coordinator import CospendConfigEntry, CospendCoordinator
+from .manage import async_setup_manage_services
 from .queue import OperationQueue, async_flush
 from .services import async_setup_services
 from .websocket import async_setup_websocket
@@ -42,6 +43,7 @@ CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Enregistre les services, indépendamment des entrées de configuration."""
     async_setup_services(hass)
+    async_setup_manage_services(hass)
     async_setup_websocket(hass)
     await _async_register_card(hass)
     return True

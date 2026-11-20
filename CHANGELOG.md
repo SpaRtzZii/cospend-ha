@@ -4,6 +4,21 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 
 ## [Non publié]
 
+### Ajouté (jalon M6c : gestion du projet)
+- Roue crantée dans la carte (niveau gestionnaire requis, masquée avec `allow_write: false`) :
+  écran à quatre onglets pour ajouter, modifier et supprimer les **membres** (nom, poids, couleur,
+  actif), les **catégories** et **modes de paiement** (nom, icône, couleur) et les **devises**
+  (code, taux de change), avec confirmation avant suppression.
+- 12 services : `add_member`, `update_member`, `delete_member`, `add_category`, `update_category`,
+  `delete_category`, `add_payment_mode`, `update_payment_mode`, `delete_payment_mode`,
+  `add_currency`, `update_currency`, `delete_currency`. Les éléments se désignent par leur nom ou
+  leur identifiant.
+- Bibliothèque `aiocospend` 0.6.0 : appels `create_/update_/delete_` pour ces quatre objets.
+- Ces opérations ne passent pas par la file d'attente hors ligne : elles échouent si Nextcloud est
+  injoignable (rejouer plus tard un ajout ou une suppression pourrait créer des doublons).
+- À vérifier sur un vrai serveur : routes et paramètres écrits d'après l'API connue de Cospend, non
+  testés contre Nextcloud. Un membre qui a des dépenses est désactivé par Cospend, pas supprimé.
+
 ### Ajouté (jalon M6b : modification, répartitions, devises, répétition)
 - Bouton « Modifier » dans le détail d'une dépense : formulaire prérempli, seuls les champs
   changés sont envoyés (la date inchangée n'est pas renvoyée, pour ne pas perdre l'heure).

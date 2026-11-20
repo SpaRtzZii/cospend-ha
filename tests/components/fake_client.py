@@ -129,6 +129,17 @@ class FakeClient:
         self._record_write("delete_bill", (project_id, bill_id), kwargs)
         del self.bills[bill_id]
 
+    def __getattr__(self, name: str) -> Any:
+        """Appels de structure (membres, catégories…) : enregistrés tels quels."""
+        if name.startswith(("create_", "update_", "delete_")):
+
+            async def record(*args: Any, **kwargs: Any) -> int | None:
+                self._record_write(name, args, kwargs)
+                return 77 if name.startswith("create_") else None
+
+            return record
+        raise AttributeError(name)
+
     # ------------------------------------------------------------ scénarios de test
 
     def simulate_add(self, bill_id: int, **changes: Any) -> Bill:
