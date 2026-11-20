@@ -154,6 +154,24 @@ describe("cospend-stats", () => {
     );
   });
 
+  it("n'écrit pas le libellé des nœuds trop fins du Sankey, mais garde leur infobulle", async () => {
+    const element = await mount(
+      stats({
+        links: [
+          { source: "payer:1", target: "category:5", value: 1000 },
+          { source: "payer:2", target: "category:6", value: 0.5 },
+          { source: "category:5", target: "ower:1", value: 1000 },
+          { source: "category:6", target: "ower:2", value: 0.5 },
+        ],
+      }),
+    );
+    await click(element, '[data-tab="sankey"]');
+    const labels = [...root(element).querySelectorAll("svg.sankey text")].map((n) => n.textContent);
+    expect(labels).toContain("Courses");
+    expect(labels).not.toContain("Resto");
+    expect(root(element).querySelector("svg.sankey")!.innerHTML).toContain("Resto");
+  });
+
   it("envoie les filtres choisis et recharge", async () => {
     const calls: Array<Record<string, unknown>> = [];
     const element = await mount(stats(), calls);

@@ -4,6 +4,12 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 
 ## [Non publié]
 
+### Modifié
+- Soldes des membres : ils ont maintenant leur écran, ouvert par un bouton « Soldes » dans
+  l'en-tête (comme Statistiques, Remboursements et Réglages), ce qui allège la carte. L'écran
+  ajoute le total dépensé. Option `show_balances` : affiche ce bouton ; nouvelle option
+  `inline_balances` (défaut : faux) pour garder les soldes au-dessus des dépenses.
+
 ### Ajouté (jalon M7b : statistiques)
 - Bouton « Statistiques » dans la carte (option `show_stats`, active par défaut) : tableau (par
   membre : payé, part, solde ; par catégorie, mode de paiement et mois), graphiques (dépenses par
@@ -14,6 +20,8 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 - Commande websocket `cospend/statistics`. Les totaux sont calculés localement sur les dépenses
   synchronisées (pas d'appel à Nextcloud), donc disponibles hors ligne ; les mois sont lus dans le
   fuseau de Home Assistant.
+- Diagramme de Sankey : marge en haut et en bas (libellés du bas coupés), hauteur adaptée au
+  nombre de nœuds, libellés masqués pour les nœuds trop fins (infobulle conservée).
 - Bibliothèque `aiocospend` 0.8.0 : `compute_statistics`, `StatsFilter` et modèles associés.
 
 ### Ajouté (jalon M7a : plan de remboursement)

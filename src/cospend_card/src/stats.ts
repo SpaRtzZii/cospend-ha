@@ -29,6 +29,8 @@ const PERIODS: Period[] = [
 ];
 const MAX_LABEL = 18;
 const NO_CATEGORY = 0;
+/** En dessous de cette hauteur, un nœud du Sankey n'a pas la place d'afficher son libellé. */
+const MIN_LABEL_HEIGHT = 9;
 
 const clip = (text: string) =>
   text.length > MAX_LABEL ? `${text.slice(0, MAX_LABEL - 1)}…` : text;
@@ -603,11 +605,16 @@ class CospendStats extends LitElement {
     });
     const width = 480;
     const margin = 0;
-    const height = Math.min(Math.max(nodes.length * 26, 220), 520);
+    const tallest = Math.max(
+      ...[0, 1, 2].map((column) => nodes.filter((n) => n.column === column).length),
+    );
+    const padding = 12;
+    const height = Math.min(Math.max(tallest * 30 + 2 * padding, 220), 560);
     const layout = sankeyLayout(nodes, stats.links, {
       width,
       height,
       margin,
+      padding,
       gap: 8,
       nodeWidth: 12,
     });
@@ -635,14 +642,16 @@ class CospendStats extends LitElement {
                 <rect x=${n.x} y=${n.y} width="12" height=${Math.max(n.height, 1)} fill=${n.color}>
                   <title>${n.label} : ${this._money(n.value)}</title>
                 </rect>
-                <text
+                ${n.height < MIN_LABEL_HEIGHT
+                  ? nothing
+                  : svg`<text
                   x=${left ? n.x - 6 : n.x + 18}
                   y=${n.y + n.height / 2}
                   dy="0.35em"
                   text-anchor=${left ? "end" : "start"}
                   class="label-node"
                   >${clip(n.label)}</text
-                >
+                >`}
               </g>`;
             })}
           </svg>

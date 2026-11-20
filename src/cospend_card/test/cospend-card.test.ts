@@ -155,15 +155,13 @@ describe("cospend-card", () => {
     expect(customElements.get("cospend-card-editor")).toBeDefined();
   });
 
-  it("affiche les soldes et les dépenses du projet", async () => {
+  it("affiche les dépenses du projet, et les soldes dans un écran à part", async () => {
     const { hass } = makeHass([project()], [bill(1, "Courses"), bill(2, "Essence")]);
     const card = await mount(hass);
     const content = text(card);
     expect(content).toContain("Voyage");
-    expect(content).toContain("Alice");
-    expect(content).toContain("Bob");
-    expect(content).toMatch(/\+40,00\s*€/);
-    expect(content).toMatch(/-40,00\s*€/);
+    expect(card.shadowRoot!.querySelector("cospend-balances")).toBeNull();
+    expect(content).not.toMatch(/\+40,00\s*€/);
     expect(content).toContain("Courses");
     expect(content).toContain("Essence");
     expect(content).toContain("Payé par Alice");
@@ -211,8 +209,13 @@ describe("cospend-card", () => {
 
   it("respecte les blocs masqués", async () => {
     const { hass, calls } = makeHass([project()], [bill(1, "Courses")]);
-    const card = await mount(hass, { show_bills: false, show_balances: true });
-    expect(text(card)).toContain("Alice");
+    const card = await mount(hass, {
+      show_bills: false,
+      show_balances: true,
+      inline_balances: true,
+    });
+    const inline = card.shadowRoot!.querySelector("cospend-balances") as HTMLElement;
+    expect(inline.shadowRoot!.textContent).toContain("Alice");
     expect(text(card)).not.toContain("Rechercher");
     expect(calls.some((c) => c.type === "cospend/bills")).toBe(false);
   });
@@ -528,6 +531,40 @@ describe("remboursements", () => {
     const { hass } = makeHass([project()], []);
     const card = await mount(hass, { show_settlement: false });
     expect(card.shadowRoot!.querySelector("button.settle")).toBeNull();
+  });
+});
+
+describe("soldes", () => {
+  const click = (card: Card, selector: string) =>
+    (card.shadowRoot!.querySelector(selector) as HTMLElement).click();
+  beforeEach(() => {
+    document.body.innerHTML = "";
+  });
+
+  it("ouvre l'écran des soldes puis revient à la liste", async () => {
+    const { hass } = makeHass([project()], [bill(1, "Courses")]);
+    const card = await mount(hass);
+    click(card, "button.balances");
+    await settle(card);
+    const view = card.shadowRoot!.querySelector("cospend-balances") as HTMLElement;
+    expect(view).not.toBeNull();
+    expect(view.shadowRoot!.textContent).toContain("Alice");
+    expect(card.shadowRoot!.querySelector("button.balances")).toBeNull();
+    view.dispatchEvent(new CustomEvent("close"));
+    await settle(card);
+    expect(card.shadowRoot!.querySelector("cospend-balances")).toBeNull();
+    expect(card.shadowRoot!.querySelector("button.balances")).not.toBeNull();
+  });
+
+  it("n'a pas de bouton quand les soldes sont affichés sur la carte ou masqués", async () => {
+    const { hass } = makeHass([project()], []);
+    const inline = await mount(hass, { inline_balances: true });
+    expect(inline.shadowRoot!.querySelector("button.balances")).toBeNull();
+    expect(inline.shadowRoot!.querySelector("cospend-balances")).not.toBeNull();
+    document.body.innerHTML = "";
+    const hidden = await mount(hass, { show_balances: false, inline_balances: true });
+    expect(hidden.shadowRoot!.querySelector("button.balances")).toBeNull();
+    expect(hidden.shadowRoot!.querySelector("cospend-balances")).toBeNull();
   });
 });
 
