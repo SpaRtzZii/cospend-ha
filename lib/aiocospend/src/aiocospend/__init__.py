@@ -58,7 +58,7 @@ from .writer import (
     update_bill,
 )
 
-__version__ = "0.5.0"
+__version__ = "0.6.0"
 
 __all__ = [
     "execute_creates",

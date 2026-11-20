@@ -422,6 +422,42 @@ describe("écriture", () => {
   });
 });
 
+describe("gestion du projet", () => {
+  const click = (card: Card, selector: string) =>
+    (card.shadowRoot!.querySelector(selector) as HTMLElement).click();
+  beforeEach(() => {
+    document.body.innerHTML = "";
+  });
+
+  it("n'offre la roue crantée qu'à partir du niveau gestionnaire", async () => {
+    const admin = makeHass([project({ access_level: 3 })], []);
+    expect((await mount(admin.hass)).shadowRoot!.querySelector("button.gear")).not.toBeNull();
+    document.body.innerHTML = "";
+    const participant = makeHass([project({ access_level: 2 })], []);
+    expect((await mount(participant.hass)).shadowRoot!.querySelector("button.gear")).toBeNull();
+    document.body.innerHTML = "";
+    expect(
+      (await mount(admin.hass, { allow_write: false })).shadowRoot!.querySelector("button.gear"),
+    ).toBeNull();
+  });
+
+  it("ouvre l'écran de gestion, annonce la modification puis le ferme", async () => {
+    const { hass } = makeHass([project()], []);
+    const card = await mount(hass);
+    click(card, "button.gear");
+    await settle(card);
+    const manage = card.shadowRoot!.querySelector("cospend-manage")!;
+    expect(manage).not.toBeNull();
+    expect(card.shadowRoot!.querySelector("button.gear")).toBeNull();
+    manage.dispatchEvent(new CustomEvent("changed", { detail: { text: "Ajouté" } }));
+    await settle(card);
+    expect(text(card)).toContain("Ajouté");
+    manage.dispatchEvent(new CustomEvent("close"));
+    await settle(card);
+    expect(card.shadowRoot!.querySelector("cospend-manage")).toBeNull();
+  });
+});
+
 describe("éditeur", () => {
   it("émet config-changed avec la configuration modifiée", async () => {
     const { hass } = makeHass([project()], []);

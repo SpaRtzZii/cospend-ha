@@ -366,6 +366,254 @@
           "description": "Identifier shown in the repair issue or in the sensor attributes."
         }
       }
+    },
+    "add_member": {
+      "name": "Add a member",
+      "description": "Adds a member to the project (maintainer access required).",
+      "fields": {
+        "project": {
+          "name": "Project",
+          "description": "Project id or name."
+        },
+        "name": {
+          "name": "Name",
+          "description": "Member name."
+        },
+        "weight": {
+          "name": "Weight",
+          "description": "Member weight in even splits (default 1)."
+        },
+        "color": {
+          "name": "Color",
+          "description": "Color as #rrggbb."
+        },
+        "active": {
+          "name": "Active",
+          "description": "Active member (a disabled member stays in the history)."
+        }
+      }
+    },
+    "update_member": {
+      "name": "Edit a member",
+      "description": "Renames a member, changes its weight or color, or enables / disables it.",
+      "fields": {
+        "project": {
+          "name": "Project",
+          "description": "Project id or name."
+        },
+        "member": {
+          "name": "Member",
+          "description": "Name or id (member)."
+        },
+        "new_name": {
+          "name": "New name",
+          "description": "New name (leave empty to keep it)."
+        },
+        "weight": {
+          "name": "Weight",
+          "description": "Member weight in even splits (default 1)."
+        },
+        "color": {
+          "name": "Color",
+          "description": "Color as #rrggbb."
+        },
+        "active": {
+          "name": "Active",
+          "description": "Active member (a disabled member stays in the history)."
+        }
+      }
+    },
+    "delete_member": {
+      "name": "Delete a member",
+      "description": "Deletes a member. If it has bills, Cospend disables it instead.",
+      "fields": {
+        "project": {
+          "name": "Project",
+          "description": "Project id or name."
+        },
+        "member": {
+          "name": "Member",
+          "description": "Name or id (member)."
+        }
+      }
+    },
+    "add_category": {
+      "name": "Add a category",
+      "description": "Adds an expense category.",
+      "fields": {
+        "project": {
+          "name": "Project",
+          "description": "Project id or name."
+        },
+        "name": {
+          "name": "Name",
+          "description": "Category name."
+        },
+        "icon": {
+          "name": "Icon",
+          "description": "An emoji (or a few characters)."
+        },
+        "color": {
+          "name": "Color",
+          "description": "Color as #rrggbb."
+        }
+      }
+    },
+    "update_category": {
+      "name": "Edit a category",
+      "description": "Changes a category's name, icon or color.",
+      "fields": {
+        "project": {
+          "name": "Project",
+          "description": "Project id or name."
+        },
+        "category": {
+          "name": "Category",
+          "description": "Name or id (category)."
+        },
+        "new_name": {
+          "name": "New name",
+          "description": "New name (leave empty to keep it)."
+        },
+        "icon": {
+          "name": "Icon",
+          "description": "An emoji (or a few characters)."
+        },
+        "color": {
+          "name": "Color",
+          "description": "Color as #rrggbb."
+        }
+      }
+    },
+    "delete_category": {
+      "name": "Delete a category",
+      "description": "Deletes a category; its bills then have no category.",
+      "fields": {
+        "project": {
+          "name": "Project",
+          "description": "Project id or name."
+        },
+        "category": {
+          "name": "Category",
+          "description": "Name or id (category)."
+        }
+      }
+    },
+    "add_payment_mode": {
+      "name": "Add a payment mode",
+      "description": "Adds a payment mode.",
+      "fields": {
+        "project": {
+          "name": "Project",
+          "description": "Project id or name."
+        },
+        "name": {
+          "name": "Name",
+          "description": "Payment mode name."
+        },
+        "icon": {
+          "name": "Icon",
+          "description": "An emoji (or a few characters)."
+        },
+        "color": {
+          "name": "Color",
+          "description": "Color as #rrggbb."
+        }
+      }
+    },
+    "update_payment_mode": {
+      "name": "Edit a payment mode",
+      "description": "Changes a payment mode's name, icon or color.",
+      "fields": {
+        "project": {
+          "name": "Project",
+          "description": "Project id or name."
+        },
+        "payment_mode": {
+          "name": "Payment mode",
+          "description": "Name or id (payment mode)."
+        },
+        "new_name": {
+          "name": "New name",
+          "description": "New name (leave empty to keep it)."
+        },
+        "icon": {
+          "name": "Icon",
+          "description": "An emoji (or a few characters)."
+        },
+        "color": {
+          "name": "Color",
+          "description": "Color as #rrggbb."
+        }
+      }
+    },
+    "delete_payment_mode": {
+      "name": "Delete a payment mode",
+      "description": "Deletes a payment mode.",
+      "fields": {
+        "project": {
+          "name": "Project",
+          "description": "Project id or name."
+        },
+        "payment_mode": {
+          "name": "Payment mode",
+          "description": "Name or id (payment mode)."
+        }
+      }
+    },
+    "add_currency": {
+      "name": "Add a currency",
+      "description": "Adds a secondary currency with its exchange rate.",
+      "fields": {
+        "project": {
+          "name": "Project",
+          "description": "Project id or name."
+        },
+        "name": {
+          "name": "Code",
+          "description": "Currency code or name (for example USD)."
+        },
+        "exchange_rate": {
+          "name": "Exchange rate",
+          "description": "Value of one unit of this currency in the project's main currency."
+        }
+      }
+    },
+    "update_currency": {
+      "name": "Edit a currency",
+      "description": "Changes a currency's name or exchange rate.",
+      "fields": {
+        "project": {
+          "name": "Project",
+          "description": "Project id or name."
+        },
+        "currency": {
+          "name": "Currency",
+          "description": "Name or id (currency)."
+        },
+        "new_name": {
+          "name": "New name",
+          "description": "New name (leave empty to keep it)."
+        },
+        "exchange_rate": {
+          "name": "Exchange rate",
+          "description": "Value of one unit of this currency in the project's main currency."
+        }
+      }
+    },
+    "delete_currency": {
+      "name": "Delete a currency",
+      "description": "Deletes a secondary currency.",
+      "fields": {
+        "project": {
+          "name": "Project",
+          "description": "Project id or name."
+        },
+        "currency": {
+          "name": "Currency",
+          "description": "Name or id (currency)."
+        }
+      }
     }
   },
   "selector": {
@@ -421,6 +669,9 @@
     },
     "operation_not_found": {
       "message": "No queued operation has the identifier “{operation}”."
+    },
+    "needs_maintainer": {
+      "message": "Managing the members, categories, payment modes and currencies of project \"{project}\" requires maintainer access."
     }
   },
   "issues": {

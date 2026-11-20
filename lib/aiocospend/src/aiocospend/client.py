@@ -21,7 +21,13 @@ from urllib.parse import quote
 
 import aiohttp
 
-from .const import API_VERSION, CAPABILITIES_PATH, MIN_COSPEND_VERSION, OCS_BASE_PATH
+from .const import (
+    API_VERSION,
+    CAPABILITIES_PATH,
+    DEFAULT_COLOR,
+    MIN_COSPEND_VERSION,
+    OCS_BASE_PATH,
+)
 from .exceptions import (
     CospendAuthenticationError,
     CospendBadRequestError,
@@ -379,6 +385,142 @@ class CospendClient:
             return int(data)
         except (TypeError, ValueError) as err:
             raise CospendResponseError(f"Identifiant de dépense attendu, reçu : {data!r}") from err
+
+    # ------------------------------------------------------------------ structure du projet
+    #
+    # Membres, catégories, modes de paiement et devises : mêmes routes, mêmes verbes. Ces appels
+    # ne sont jamais rejoués automatiquement (pas de file d'attente côté intégration).
+
+    def _item_path(self, project_id: str, kind: str, item_id: int | None = None) -> str:
+        path = self._api(f"/projects/{quote(project_id, safe='')}/{kind}")
+        return path if item_id is None else f"{path}/{item_id}"
+
+    async def _create_item(self, project_id: str, kind: str, form: Mapping[str, Any]) -> int:
+        data = await self._request("POST", self._item_path(project_id, kind), form=form)
+        try:
+            return int(data)
+        except (TypeError, ValueError) as err:
+            raise CospendResponseError(f"Identifiant attendu, reçu : {data!r}") from err
+
+    async def _update_item(
+        self, project_id: str, kind: str, item_id: int, form: Mapping[str, Any]
+    ) -> None:
+        if all(value is None for value in form.values()):
+            raise ValueError("aucun champ à modifier")
+        await self._request("PUT", self._item_path(project_id, kind, item_id), form=form)
+
+    async def _delete_item(self, project_id: str, kind: str, item_id: int) -> None:
+        await self._request("DELETE", self._item_path(project_id, kind, item_id))
+
+    async def create_member(
+        self,
+        project_id: str,
+        name: str,
+        *,
+        weight: float = 1.0,
+        color: str | None = None,
+        activated: bool = True,
+    ) -> int:
+        return await self._create_item(
+            project_id,
+            "members",
+            {"name": name, "weight": weight, "active": int(activated), "color": color},
+        )
+
+    async def update_member(
+        self,
+        project_id: str,
+        member_id: int,
+        *,
+        name: str | None = None,
+        weight: float | None = None,
+        color: str | None = None,
+        activated: bool | None = None,
+    ) -> None:
+        """Un membre qui a des dépenses n'est pas supprimé par Cospend : on le désactive."""
+        await self._update_item(
+            project_id,
+            "members",
+            member_id,
+            {
+                "name": name,
+                "weight": weight,
+                "color": color,
+                "activated": None if activated is None else ("true" if activated else "false"),
+            },
+        )
+
+    async def delete_member(self, project_id: str, member_id: int) -> None:
+        await self._delete_item(project_id, "members", member_id)
+
+    async def create_category(
+        self, project_id: str, name: str, *, icon: str = "", color: str = DEFAULT_COLOR
+    ) -> int:
+        return await self._create_item(
+            project_id, "categories", {"name": name, "icon": icon, "color": color}
+        )
+
+    async def update_category(
+        self,
+        project_id: str,
+        category_id: int,
+        *,
+        name: str | None = None,
+        icon: str | None = None,
+        color: str | None = None,
+    ) -> None:
+        await self._update_item(
+            project_id, "categories", category_id, {"name": name, "icon": icon, "color": color}
+        )
+
+    async def delete_category(self, project_id: str, category_id: int) -> None:
+        await self._delete_item(project_id, "categories", category_id)
+
+    async def create_payment_mode(
+        self, project_id: str, name: str, *, icon: str = "", color: str = DEFAULT_COLOR
+    ) -> int:
+        return await self._create_item(
+            project_id, "paymentmodes", {"name": name, "icon": icon, "color": color}
+        )
+
+    async def update_payment_mode(
+        self,
+        project_id: str,
+        mode_id: int,
+        *,
+        name: str | None = None,
+        icon: str | None = None,
+        color: str | None = None,
+    ) -> None:
+        await self._update_item(
+            project_id, "paymentmodes", mode_id, {"name": name, "icon": icon, "color": color}
+        )
+
+    async def delete_payment_mode(self, project_id: str, mode_id: int) -> None:
+        await self._delete_item(project_id, "paymentmodes", mode_id)
+
+    async def create_currency(self, project_id: str, name: str, rate: Decimal | float) -> int:
+        return await self._create_item(
+            project_id, "currencies", {"name": name, "rate": format_amount(rate)}
+        )
+
+    async def update_currency(
+        self,
+        project_id: str,
+        currency_id: int,
+        *,
+        name: str | None = None,
+        rate: Decimal | float | None = None,
+    ) -> None:
+        await self._update_item(
+            project_id,
+            "currencies",
+            currency_id,
+            {"name": name, "rate": None if rate is None else format_amount(rate)},
+        )
+
+    async def delete_currency(self, project_id: str, currency_id: int) -> None:
+        await self._delete_item(project_id, "currencies", currency_id)
 
     # ------------------------------------------------------------------ analyse
 

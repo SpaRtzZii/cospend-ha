@@ -53,6 +53,15 @@ async function callService(
   return result.response ?? {};
 }
 
+/** Gestion du projet (membres, catégories, modes de paiement, devises) : service ``cospend.*``. */
+export function manageProject(
+  hass: HassLike,
+  service: string,
+  data: Record<string, unknown>,
+): Promise<WriteResult> {
+  return callService(hass, service, data);
+}
+
 /** Crée une dépense : ``data`` est déjà au format du service ``cospend.add_bill``. */
 export function addBill(hass: HassLike, data: Record<string, unknown>): Promise<WriteResult> {
   return callService(hass, "add_bill", data);

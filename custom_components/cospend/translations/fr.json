@@ -366,6 +366,254 @@
           "description": "Identifiant affiché dans la réparation ou dans les attributs du capteur."
         }
       }
+    },
+    "add_member": {
+      "name": "Ajouter un membre",
+      "description": "Ajoute un membre au projet (niveau gestionnaire requis).",
+      "fields": {
+        "project": {
+          "name": "Projet",
+          "description": "Identifiant ou nom du projet."
+        },
+        "name": {
+          "name": "Nom",
+          "description": "Nom du membre."
+        },
+        "weight": {
+          "name": "Poids",
+          "description": "Poids du membre dans les répartitions égales (1 par défaut)."
+        },
+        "color": {
+          "name": "Couleur",
+          "description": "Couleur au format #rrggbb."
+        },
+        "active": {
+          "name": "Actif",
+          "description": "Membre actif (un membre désactivé reste dans l'historique)."
+        }
+      }
+    },
+    "update_member": {
+      "name": "Modifier un membre",
+      "description": "Renomme un membre, change son poids, sa couleur ou l'active / le désactive.",
+      "fields": {
+        "project": {
+          "name": "Projet",
+          "description": "Identifiant ou nom du projet."
+        },
+        "member": {
+          "name": "Membre",
+          "description": "Nom ou identifiant (membre)."
+        },
+        "new_name": {
+          "name": "Nouveau nom",
+          "description": "Nouveau nom (laisser vide pour ne pas le changer)."
+        },
+        "weight": {
+          "name": "Poids",
+          "description": "Poids du membre dans les répartitions égales (1 par défaut)."
+        },
+        "color": {
+          "name": "Couleur",
+          "description": "Couleur au format #rrggbb."
+        },
+        "active": {
+          "name": "Actif",
+          "description": "Membre actif (un membre désactivé reste dans l'historique)."
+        }
+      }
+    },
+    "delete_member": {
+      "name": "Supprimer un membre",
+      "description": "Supprime un membre. S'il a des dépenses, Cospend le désactive au lieu de le supprimer.",
+      "fields": {
+        "project": {
+          "name": "Projet",
+          "description": "Identifiant ou nom du projet."
+        },
+        "member": {
+          "name": "Membre",
+          "description": "Nom ou identifiant (membre)."
+        }
+      }
+    },
+    "add_category": {
+      "name": "Ajouter une catégorie",
+      "description": "Ajoute une catégorie de dépenses.",
+      "fields": {
+        "project": {
+          "name": "Projet",
+          "description": "Identifiant ou nom du projet."
+        },
+        "name": {
+          "name": "Nom",
+          "description": "Nom de la catégorie."
+        },
+        "icon": {
+          "name": "Icône",
+          "description": "Un émoji (ou quelques caractères)."
+        },
+        "color": {
+          "name": "Couleur",
+          "description": "Couleur au format #rrggbb."
+        }
+      }
+    },
+    "update_category": {
+      "name": "Modifier une catégorie",
+      "description": "Change le nom, l'icône ou la couleur d'une catégorie.",
+      "fields": {
+        "project": {
+          "name": "Projet",
+          "description": "Identifiant ou nom du projet."
+        },
+        "category": {
+          "name": "Catégorie",
+          "description": "Nom ou identifiant (catégorie)."
+        },
+        "new_name": {
+          "name": "Nouveau nom",
+          "description": "Nouveau nom (laisser vide pour ne pas le changer)."
+        },
+        "icon": {
+          "name": "Icône",
+          "description": "Un émoji (ou quelques caractères)."
+        },
+        "color": {
+          "name": "Couleur",
+          "description": "Couleur au format #rrggbb."
+        }
+      }
+    },
+    "delete_category": {
+      "name": "Supprimer une catégorie",
+      "description": "Supprime une catégorie ; ses dépenses n'ont alors plus de catégorie.",
+      "fields": {
+        "project": {
+          "name": "Projet",
+          "description": "Identifiant ou nom du projet."
+        },
+        "category": {
+          "name": "Catégorie",
+          "description": "Nom ou identifiant (catégorie)."
+        }
+      }
+    },
+    "add_payment_mode": {
+      "name": "Ajouter un mode de paiement",
+      "description": "Ajoute un mode de paiement.",
+      "fields": {
+        "project": {
+          "name": "Projet",
+          "description": "Identifiant ou nom du projet."
+        },
+        "name": {
+          "name": "Nom",
+          "description": "Nom du mode de paiement."
+        },
+        "icon": {
+          "name": "Icône",
+          "description": "Un émoji (ou quelques caractères)."
+        },
+        "color": {
+          "name": "Couleur",
+          "description": "Couleur au format #rrggbb."
+        }
+      }
+    },
+    "update_payment_mode": {
+      "name": "Modifier un mode de paiement",
+      "description": "Change le nom, l'icône ou la couleur d'un mode de paiement.",
+      "fields": {
+        "project": {
+          "name": "Projet",
+          "description": "Identifiant ou nom du projet."
+        },
+        "payment_mode": {
+          "name": "Mode de paiement",
+          "description": "Nom ou identifiant (mode de paiement)."
+        },
+        "new_name": {
+          "name": "Nouveau nom",
+          "description": "Nouveau nom (laisser vide pour ne pas le changer)."
+        },
+        "icon": {
+          "name": "Icône",
+          "description": "Un émoji (ou quelques caractères)."
+        },
+        "color": {
+          "name": "Couleur",
+          "description": "Couleur au format #rrggbb."
+        }
+      }
+    },
+    "delete_payment_mode": {
+      "name": "Supprimer un mode de paiement",
+      "description": "Supprime un mode de paiement.",
+      "fields": {
+        "project": {
+          "name": "Projet",
+          "description": "Identifiant ou nom du projet."
+        },
+        "payment_mode": {
+          "name": "Mode de paiement",
+          "description": "Nom ou identifiant (mode de paiement)."
+        }
+      }
+    },
+    "add_currency": {
+      "name": "Ajouter une devise",
+      "description": "Ajoute une devise secondaire avec son taux de change.",
+      "fields": {
+        "project": {
+          "name": "Projet",
+          "description": "Identifiant ou nom du projet."
+        },
+        "name": {
+          "name": "Code",
+          "description": "Code ou nom de la devise (par exemple USD)."
+        },
+        "exchange_rate": {
+          "name": "Taux de change",
+          "description": "Valeur d'une unité de cette devise dans la devise principale du projet."
+        }
+      }
+    },
+    "update_currency": {
+      "name": "Modifier une devise",
+      "description": "Change le nom ou le taux de change d'une devise.",
+      "fields": {
+        "project": {
+          "name": "Projet",
+          "description": "Identifiant ou nom du projet."
+        },
+        "currency": {
+          "name": "Devise",
+          "description": "Nom ou identifiant (devise)."
+        },
+        "new_name": {
+          "name": "Nouveau nom",
+          "description": "Nouveau nom (laisser vide pour ne pas le changer)."
+        },
+        "exchange_rate": {
+          "name": "Taux de change",
+          "description": "Valeur d'une unité de cette devise dans la devise principale du projet."
+        }
+      }
+    },
+    "delete_currency": {
+      "name": "Supprimer une devise",
+      "description": "Supprime une devise secondaire.",
+      "fields": {
+        "project": {
+          "name": "Projet",
+          "description": "Identifiant ou nom du projet."
+        },
+        "currency": {
+          "name": "Devise",
+          "description": "Nom ou identifiant (devise)."
+        }
+      }
     }
   },
   "selector": {
@@ -421,6 +669,9 @@
     },
     "operation_not_found": {
       "message": "Aucune opération en file d'attente n'a l'identifiant « {operation} »."
+    },
+    "needs_maintainer": {
+      "message": "Gérer les membres, catégories, modes de paiement et devises du projet « {project} » demande le niveau gestionnaire."
     }
   },
   "issues": {

@@ -111,6 +111,8 @@ export interface WriteResult {
   /** ``true`` quand Nextcloud est injoignable : l'opération est en file d'attente. */
   queued?: boolean;
   operation_id?: string;
+  /** Identifiant de l'élément créé (service de gestion du projet). */
+  id?: number;
 }
 
 /** Ce dont la carte a besoin de l'objet ``hass`` de Home Assistant. */
