@@ -150,6 +150,23 @@ describe("cospend-card", () => {
     expect(content).toContain("Pour tout le monde");
   });
 
+  it("affiche l'icône de la catégorie, 💰 pour un remboursement et rien sans catégorie", async () => {
+    const { hass } = makeHass(
+      [project()],
+      [
+        bill(1, "Courses", { category_id: 1 }),
+        bill(2, "A → B", { category_id: -11 }),
+        bill(3, "Sans catégorie", { category_id: 0 }),
+      ],
+    );
+    const card = await mount(hass);
+    const icons = Array.from(card.shadowRoot!.querySelectorAll(".row .icon")).map((el) =>
+      el.textContent!.trim(),
+    );
+    expect(icons).toEqual(["🛒", "💰", ""]);
+    expect(card.shadowRoot!.querySelectorAll(".row .icon ha-icon")).toHaveLength(1);
+  });
+
   it("masque le sélecteur quand le projet est fixé et le propose sinon", async () => {
     const other = project({ id: "maison", name: "Maison" });
     const { hass } = makeHass([project(), other], []);

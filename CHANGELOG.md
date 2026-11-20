@@ -4,6 +4,11 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 
 ## [Non publié]
 
+### Corrigé (carte)
+- Icônes de catégories : les remboursements affichent 💰 (catégorie interne −11 de Cospend), la
+  pastille prend la couleur de la catégorie, et une dépense sans catégorie reçoit une icône neutre
+  au lieu d'un faux pictogramme.
+
 ### Ajouté (jalon M5 : carte Lovelace en lecture)
 - Carte `custom:cospend-card`, servie par l'intégration (aucune ressource à déclarer) et compilée
   à la publication d'une release. Elle affiche : sélecteur de projet (archivés masqués), soldes des

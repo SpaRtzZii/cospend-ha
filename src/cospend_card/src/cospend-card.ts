@@ -4,6 +4,8 @@ import type { TemplateResult } from "lit";
 import { fetchBill, fetchBills, fetchProjects, subscribeChanges } from "./api";
 import {
   balanceWidth,
+  categoryBackground,
+  categoryView,
   formatAmount,
   formatDate,
   initials,
@@ -431,7 +433,7 @@ class CospendCard extends LitElement {
   }
 
   private _billRow(project: Project, item: BillItem, language: string): TemplateResult {
-    const category = project.categories.find((c) => c.id === item.category_id);
+    const category = categoryView(project, item.category_id, this._t("reimbursement"));
     const payer = memberName(project, item.payer_id);
     const everyone = item.ower_ids.length === project.members.filter((m) => m.activated).length;
     const owers = everyone
@@ -440,7 +442,7 @@ class CospendCard extends LitElement {
     return html`
       <li>
         <button class="row" @click=${() => void this._open(item)}>
-          <span class="icon" aria-hidden="true">${category?.icon || "🧾"}</span>
+          ${this._categoryIcon(category)}
           <span class="main">
             <span class="what">${item.what}</span>
             <span class="sub">${this._t("paid_by", { name: payer })} · ${owers}</span>
@@ -472,9 +474,28 @@ class CospendCard extends LitElement {
     `;
   }
 
+  /** Pastille de catégorie ; sans catégorie, une icône neutre (Cospend n'en affiche aucune). */
+  private _categoryIcon(
+    category: ReturnType<typeof categoryView>,
+    big = false,
+  ): TemplateResult {
+    const size = big ? "icon big" : "icon";
+    return category && category.icon
+      ? html`<span
+          class=${size}
+          style="background:${categoryBackground(category.color)}"
+          title=${category.name}
+          aria-hidden="true"
+          >${category.icon}</span
+        >`
+      : html`<span class=${size} aria-hidden="true"
+          ><ha-icon icon="mdi:receipt-text-outline"></ha-icon
+        ></span>`;
+  }
+
   private _renderDetail(project: Project, item: BillItem): TemplateResult {
     const language = this._language;
-    const category = project.categories.find((c) => c.id === item.category_id);
+    const category = categoryView(project, item.category_id, this._t("reimbursement"));
     const mode = project.payment_modes.find((p) => p.id === item.payment_mode_id);
     const repeat =
       item.repeat === "n"
@@ -494,7 +515,7 @@ class CospendCard extends LitElement {
           <ha-icon icon="mdi:arrow-left"></ha-icon> ${this._t("back")}
         </button>
         <div class="detail-head">
-          <span class="icon big" aria-hidden="true">${category?.icon || "🧾"}</span>
+          ${this._categoryIcon(category, true)}
           <div>
             <h2>${item.what}</h2>
             <div class="total big">${formatAmount(item.amount, project.currency, language)}</div>
@@ -512,7 +533,9 @@ class CospendCard extends LitElement {
           <dd>${formatDate(item.date, language)}</dd>
           <dt>${this._t("payer")}</dt>
           <dd>${payer ? this._avatar(payer) : nothing} ${memberName(project, item.payer_id)}</dd>
-          ${category ? html`<dt>${this._t("category")}</dt><dd>${category.icon} ${category.name}</dd>` : nothing}
+          ${category
+            ? html`<dt>${this._t("category")}</dt><dd>${category.icon} ${category.name}</dd>`
+            : nothing}
           ${mode ? html`<dt>${this._t("payment_mode")}</dt><dd>${mode.icon} ${mode.name}</dd>` : nothing}
           ${repeat ? html`<dt>${this._t("repeat")}</dt><dd>${repeat}</dd>` : nothing}
           ${item.comment ? html`<dt>${this._t("comment")}</dt><dd>${item.comment}</dd>` : nothing}
@@ -749,6 +772,10 @@ class CospendCard extends LitElement {
       border-radius: 50%;
       font-size: 18px;
       background: var(--secondary-background-color);
+    }
+    .icon ha-icon {
+      --mdc-icon-size: 20px;
+      color: var(--secondary-text-color);
     }
     .icon.big {
       width: 48px;
