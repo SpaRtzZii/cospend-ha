@@ -675,6 +675,9 @@
     },
     "member_exists": {
       "message": "An active member named \"{name}\" already exists."
+    },
+    "manage_unreachable": {
+      "message": "Nextcloud is unreachable: this change is not queued, try again when the server is back."
     }
   },
   "issues": {

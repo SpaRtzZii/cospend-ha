@@ -429,21 +429,39 @@ describe("gestion du projet", () => {
     document.body.innerHTML = "";
   });
 
-  it("n'offre la roue crantée qu'à partir du niveau gestionnaire", async () => {
-    const admin = makeHass([project({ access_level: 3 })], []);
-    expect((await mount(admin.hass)).shadowRoot!.querySelector("button.gear")).not.toBeNull();
+  const as = (hass: HassLike, isAdmin: boolean): HassLike => ({
+    ...hass,
+    user: { name: "Quentin", is_admin: isAdmin },
+  });
+  const gear = (card: Card) => card.shadowRoot!.querySelector("button.gear");
+
+  it("réserve la roue aux administrateurs tant que l'option n'est pas cochée", async () => {
+    const { hass } = makeHass([project()], []);
+    expect(gear(await mount(as(hass, true)))).not.toBeNull();
     document.body.innerHTML = "";
-    const participant = makeHass([project({ access_level: 2 })], []);
-    expect((await mount(participant.hass)).shadowRoot!.querySelector("button.gear")).toBeNull();
+    expect(gear(await mount(as(hass, false)))).toBeNull();
     document.body.innerHTML = "";
-    expect(
-      (await mount(admin.hass, { allow_write: false })).shadowRoot!.querySelector("button.gear"),
-    ).toBeNull();
+    expect(gear(await mount(as(hass, false), { allow_manage: false }))).toBeNull();
+  });
+
+  it("ouvre la roue à tous les utilisateurs quand l'option est cochée", async () => {
+    const { hass } = makeHass([project()], []);
+    expect(gear(await mount(as(hass, false), { allow_manage: true }))).not.toBeNull();
+  });
+
+  it("exige toujours le niveau gestionnaire et l'écriture autorisée", async () => {
+    const low = makeHass([project({ access_level: 2 })], []);
+    expect(gear(await mount(as(low.hass, true), { allow_manage: true }))).toBeNull();
+    document.body.innerHTML = "";
+    const ok = makeHass([project()], []);
+    expect(gear(await mount(as(ok.hass, true), { allow_write: false }))).toBeNull();
+    document.body.innerHTML = "";
+    expect(gear(await mount(as(ok.hass, true), { allow_manage: true, allow_write: false }))).toBeNull();
   });
 
   it("ouvre l'écran de gestion, annonce la modification puis le ferme", async () => {
     const { hass } = makeHass([project()], []);
-    const card = await mount(hass);
+    const card = await mount(as(hass, true));
     click(card, "button.gear");
     await settle(card);
     const manage = card.shadowRoot!.querySelector("cospend-manage")!;

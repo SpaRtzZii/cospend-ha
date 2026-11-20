@@ -102,6 +102,8 @@ export interface CospendCardConfig {
   page_size?: number;
   /** Autorise l'ajout et la suppression de dépenses depuis la carte (activé par défaut). */
   allow_write?: boolean;
+  /** Réglages du projet (roue crantée) ouverts à tous les utilisateurs ; sinon, aux seuls administrateurs. */
+  allow_manage?: boolean;
 }
 
 /** Réponse des services d'écriture (voir services.py). */
@@ -120,7 +122,7 @@ export interface WriteResult {
 /** Ce dont la carte a besoin de l'objet ``hass`` de Home Assistant. */
 export interface HassLike {
   language?: string;
-  user?: { name?: string };
+  user?: { name?: string; is_admin?: boolean };
   locale?: { language?: string };
   callWS<T>(message: Record<string, unknown>): Promise<T>;
   connection: {
