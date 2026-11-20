@@ -289,7 +289,7 @@ async def test_create_member_and_category(client: CospendClient, fake: FakeCospe
     category = await client.create_category(PROJECT, "Sport", icon="🎾")
     assert category == member + 1
     request = last_request(fake, "POST")
-    assert request.path.endswith("/categories")
+    assert request.path.endswith("/category")
     assert request.form == {"name": "Sport", "icon": "🎾", "color": "#888888"}
 
 
@@ -308,12 +308,12 @@ async def test_update_member_sends_only_given_fields(
 
 async def test_payment_mode_and_currency_routes(client: CospendClient, fake: FakeCospend) -> None:
     await client.create_payment_mode(PROJECT, "Espèces", icon="💵", color="#00aa00")
-    assert last_request(fake, "POST").path.endswith("/paymentmodes")
+    assert last_request(fake, "POST").path.endswith("/paymentmode")
     await client.update_payment_mode(PROJECT, 17, name="Cash")
-    assert last_request(fake, "PUT").path.endswith("/paymentmodes/17")
+    assert last_request(fake, "PUT").path.endswith("/paymentmode/17")
     await client.create_currency(PROJECT, "USD", 0.92)
     request = last_request(fake, "POST")
-    assert request.path.endswith("/currencies")
+    assert request.path.endswith("/currency")
     assert request.form == {"name": "USD", "rate": "0.92"}
     await client.update_currency(PROJECT, 1, rate=0.9)
     assert last_request(fake, "PUT").form == {"rate": "0.9"}
@@ -321,8 +321,36 @@ async def test_payment_mode_and_currency_routes(client: CospendClient, fake: Fak
 
 async def test_delete_items_and_unknown_project(client: CospendClient, fake: FakeCospend) -> None:
     await client.delete_category(PROJECT, 35)
-    assert last_request(fake, "DELETE").path.endswith("/categories/35")
+    assert last_request(fake, "DELETE").path.endswith("/category/35")
     await client.delete_currency(PROJECT, 1)
-    assert last_request(fake, "DELETE").path.endswith("/currencies/1")
+    assert last_request(fake, "DELETE").path.endswith("/currency/1")
     with pytest.raises(CospendNotFoundError):
         await client.delete_member("autre", 1)
+
+
+async def test_item_routes_fall_back_to_the_other_spelling(
+    client: CospendClient, fake: FakeCospend
+) -> None:
+    fake.missing_segments = {"category", "currency"}
+    await client.create_category(PROJECT, "Sport")
+    assert last_request(fake, "POST").path.endswith("/categories")
+    await client.delete_currency(PROJECT, 1)
+    assert last_request(fake, "DELETE").path.endswith("/currencies/1")
+    fake.missing_segments = {"category", "categories"}
+    with pytest.raises(CospendNotFoundError):
+        await client.create_category(PROJECT, "Sport")
+
+
+async def test_member_creation_accepts_an_object_response(
+    client: CospendClient, fake: FakeCospend
+) -> None:
+    fake.item_response = {"id": 88, "name": "Zoé"}
+    assert await client.create_member(PROJECT, "Zoé") == 88
+
+
+async def test_bad_request_reports_the_server_message(
+    client: CospendClient, fake: FakeCospend
+) -> None:
+    fake.item_error = (400, {"message": "Ce membre existe déjà"})
+    with pytest.raises(CospendBadRequestError, match="Ce membre existe déjà"):
+        await client.create_member(PROJECT, "Zoé")

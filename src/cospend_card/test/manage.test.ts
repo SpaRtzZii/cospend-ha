@@ -101,6 +101,24 @@ describe("cospend-manage", () => {
     expect(root(element).querySelector("form")).toBeNull(); // retour à la liste
   });
 
+  it("annonce la réactivation d'un membre désactivé", async () => {
+    const element = document.createElement("cospend-manage") as Manage;
+    element.hass = {
+      language: "fr",
+      callWS: async () => ({ response: { id: 2, reactivated: true } }) as never,
+      connection: {} as never,
+    } as HassLike;
+    element.project = project;
+    document.body.append(element);
+    await element.updateComplete;
+    let changed = "";
+    element.addEventListener("changed", (e) => (changed = (e as CustomEvent).detail.text));
+    await click(element, "button.add");
+    await setText(element, "name", "Bob");
+    await submit(element);
+    expect(changed).toBe("Membre réactivé");
+  });
+
   it("refuse un nom vide sans appeler le serveur", async () => {
     const calls: Array<Record<string, unknown>> = [];
     const element = await mount(calls);

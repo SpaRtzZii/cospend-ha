@@ -113,6 +113,8 @@ export interface WriteResult {
   operation_id?: string;
   /** Identifiant de l'élément créé (service de gestion du projet). */
   id?: number;
+  /** Le membre existait désactivé : il a été réactivé au lieu d'être recréé. */
+  reactivated?: boolean;
 }
 
 /** Ce dont la carte a besoin de l'objet ``hass`` de Home Assistant. */

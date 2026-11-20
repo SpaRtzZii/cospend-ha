@@ -16,7 +16,7 @@ import base64
 import json
 from collections.abc import AsyncIterator, Mapping, Sequence
 from decimal import Decimal
-from typing import Any
+from typing import Any, ClassVar
 from urllib.parse import quote
 
 import aiohttp
@@ -67,6 +67,18 @@ def basic_auth_header(username: str, password: str) -> str:
     """En-tête ``Authorization`` Basic (sans dépendre de l'API d'authentification d'aiohttp)."""
     token = base64.b64encode(f"{username}:{password}".encode()).decode("ascii")
     return f"Basic {token}"
+
+
+def _server_message(text: str) -> str:
+    """Message d'erreur renvoyé par Cospend (`` (…)``), vide s'il n'y en a pas."""
+    try:
+        data = json.loads(text)["ocs"]["data"]
+    except (ValueError, KeyError, TypeError):
+        return ""
+    message = data.get("message") or data.get("error") if isinstance(data, dict) else data
+    if isinstance(message, str) and message.strip():
+        return f" ({message.strip()[:200]})"
+    return ""
 
 
 def _clean(params: Mapping[str, Any]) -> dict[str, str]:
@@ -155,7 +167,9 @@ class CospendClient:
         if status == 404:
             return CospendNotFoundError(f"{detail} : introuvable", status=status)
         if status == 400:
-            return CospendBadRequestError(f"{detail} : requête refusée", status=status)
+            return CospendBadRequestError(
+                f"{detail} : requête refusée{_server_message(text)}", status=status
+            )
         if status == 503:
             return CospendMaintenanceError(f"{detail} : serveur en maintenance", status=status)
         if status >= 500:
@@ -391,12 +405,40 @@ class CospendClient:
     # Membres, catégories, modes de paiement et devises : mêmes routes, mêmes verbes. Ces appels
     # ne sont jamais rejoués automatiquement (pas de file d'attente côté intégration).
 
-    def _item_path(self, project_id: str, kind: str, item_id: int | None = None) -> str:
-        path = self._api(f"/projects/{quote(project_id, safe='')}/{kind}")
-        return path if item_id is None else f"{path}/{item_id}"
+    # Segments de route essayés dans l'ordre : l'API de Cospend nomme ces collections au
+    # singulier (``category``, ``paymentmode``, ``currency``) mais ``members`` au pluriel ; on
+    # retente avec l'autre forme sur un 404 pour couvrir les variantes de versions.
+    _SEGMENTS: ClassVar[dict[str, tuple[str, ...]]] = {
+        "members": ("members", "member"),
+        "categories": ("category", "categories"),
+        "paymentmodes": ("paymentmode", "paymentmodes"),
+        "currencies": ("currency", "currencies"),
+    }
+
+    async def _item_request(
+        self,
+        method: str,
+        project_id: str,
+        kind: str,
+        item_id: int | None = None,
+        form: Mapping[str, Any] | None = None,
+    ) -> Any:
+        segments = self._SEGMENTS[kind]
+        for index, segment in enumerate(segments):
+            path = self._api(f"/projects/{quote(project_id, safe='')}/{segment}")
+            if item_id is not None:
+                path = f"{path}/{item_id}"
+            try:
+                return await self._request(method, path, form=form)
+            except CospendNotFoundError:
+                if index == len(segments) - 1:
+                    raise
+        raise AssertionError("inaccessible")  # pragma: no cover
 
     async def _create_item(self, project_id: str, kind: str, form: Mapping[str, Any]) -> int:
-        data = await self._request("POST", self._item_path(project_id, kind), form=form)
+        data = await self._item_request("POST", project_id, kind, form=form)
+        if isinstance(data, Mapping) and "id" in data:  # certaines versions renvoient l'objet
+            data = data["id"]
         try:
             return int(data)
         except (TypeError, ValueError) as err:
@@ -407,10 +449,10 @@ class CospendClient:
     ) -> None:
         if all(value is None for value in form.values()):
             raise ValueError("aucun champ à modifier")
-        await self._request("PUT", self._item_path(project_id, kind, item_id), form=form)
+        await self._item_request("PUT", project_id, kind, item_id, form)
 
     async def _delete_item(self, project_id: str, kind: str, item_id: int) -> None:
-        await self._request("DELETE", self._item_path(project_id, kind, item_id))
+        await self._item_request("DELETE", project_id, kind, item_id)
 
     async def create_member(
         self,

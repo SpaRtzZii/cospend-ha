@@ -50,6 +50,11 @@ _WEIGHT = vol.All(vol.Coerce(float), vol.Range(min=0, max=1000))
 _ICON = vol.All(cv.string, vol.Length(max=16))
 _CODE = vol.All(cv.string, str.strip, vol.Length(min=1, max=20), vol.Match(r"^[^\s,]+$"))
 
+
+class _MemberExists(Exception):
+    """Un membre actif porte déjà ce nom."""
+
+
 Handler = Callable[[ServiceCall], Awaitable[ServiceResponse]]
 
 
@@ -79,6 +84,7 @@ async def _manage(
     call: ServiceCall,
     kind: str | None,
     action: Callable[[CospendClient, str, Project, int | None], Awaitable[int | None]],
+    extra: dict[str, Any] | None = None,
 ) -> ServiceResponse:
     """Résout le projet et l'élément visé, exécute l'appel puis rafraîchit les données."""
     hass, data = call.hass, call.data
@@ -90,12 +96,20 @@ async def _manage(
     item_id = _resolve(project, kind, data[kind]) if kind and kind in data else None
     try:
         new_id = await action(coordinator.client, project_id, project, item_id)
+    except _MemberExists as err:
+        raise _error("member_exists", name=str(err)) from err
     except ValueError as err:
         raise _error("invalid_value", error=err) from err
     except Exception as err:  # noqa: BLE001 - traduite pour l'utilisateur
         raise await _translate(hass, coordinator, err) from err
-    await coordinator.async_refresh()
-    return {"project": project_id, "id": new_id if new_id is not None else item_id}
+    finally:
+        # Même après une erreur, la requête a pu aboutir côté Nextcloud : on resynchronise.
+        await coordinator.async_refresh()
+    return {
+        "project": project_id,
+        "id": new_id if new_id is not None else item_id,
+        **(extra or {}),
+    }
 
 
 def _register(hass: HomeAssistant, name: str, schema: dict[Any, Any], handler: Handler) -> None:
@@ -113,17 +127,33 @@ def _register(hass: HomeAssistant, name: str, schema: dict[Any, Any], handler: H
 
 async def _add_member(call: ServiceCall) -> ServiceResponse:
     d = call.data
+    extra: dict[str, Any] = {"reactivated": False}
 
     async def run(client, pid, project, _):  # type: ignore[no-untyped-def]
-        return await client.create_member(
+        wanted = d[ATTR_NAME].casefold()
+        existing = next((m for m in project.members if m.name.casefold() == wanted), None)
+        if existing is None:
+            return await client.create_member(
+                pid,
+                d[ATTR_NAME],
+                weight=d.get(ATTR_WEIGHT, 1.0),
+                color=d.get(ATTR_COLOR),
+                activated=d.get(ATTR_ACTIVE, True),
+            )
+        if existing.activated:
+            raise _MemberExists(existing.name)
+        # Un membre désactivé garde son nom : on le réactive au lieu d'échouer.
+        await client.update_member(
             pid,
-            d[ATTR_NAME],
-            weight=d.get(ATTR_WEIGHT, 1.0),
+            existing.id,
+            weight=d.get(ATTR_WEIGHT),
             color=d.get(ATTR_COLOR),
-            activated=d.get(ATTR_ACTIVE, True),
+            activated=True,
         )
+        extra["reactivated"] = True
+        return existing.id
 
-    return await _manage(call, None, run)
+    return await _manage(call, None, run, extra)
 
 
 async def _update_member(call: ServiceCall) -> ServiceResponse:
