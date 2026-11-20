@@ -289,3 +289,28 @@ def test_date_helpers() -> None:
     assert _when("2026-11-18 21:30:00").hour == 21
     assert _when("2026-11-18").date().isoformat() == "2026-11-18"
     assert _when(datetime(2026, 1, 1, tzinfo=UTC)).tzinfo is not None
+
+
+async def test_add_bill_as_the_card_sends_it(
+    hass: HomeAssistant, init_integration, fake_client: FakeClient
+) -> None:
+    """La carte envoie des identifiants (en texte), une date seule et une expression."""
+    response = await call(
+        hass,
+        "add_bill",
+        project=PROJECT,
+        title="Essence",
+        amount="12,5 + 7",
+        payer="13",
+        owers=["12", "13"],
+        split_mode="even",
+        category="35",
+        comment="",
+        date="2026-11-20",
+    )
+    (bill,) = created(fake_client)
+    assert response["bill_ids"] == [100]
+    assert (float(bill["amount"]), bill["payer_id"]) == (19.5, 13)
+    assert tuple(bill["payed_for"]) == (12, 13)
+    assert (bill["category_id"], bill["payment_mode_id"]) == (35, 0)
+    assert bill["date"] == "2026-11-20"

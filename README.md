@@ -45,14 +45,18 @@ title: Shared budget       # optional
 show_balances: true        # member balances
 show_bills: true           # expense list with details
 show_search: true          # search field
+allow_write: true          # add / delete expenses from the card
 page_size: 20              # expenses loaded at a time
 ```
 
 The card follows your Home Assistant theme (light, dark, custom themes) and language (English and
 French). It shows the balances, the expense list (custom splits are shown as one expense), a search
 and the detail of each expense with everyone's share. It updates on its own and shows the
-operations still waiting in the offline queue. Creating and editing expenses from the card arrives
-in the next milestone. The card is built when a release is published: a copy of the repository
+operations still waiting in the offline queue. You can add an expense (title, amount or calculation such as `12,5 + 7`, payer, participants,
+date, category, payment mode, comment; equal split) and delete one after a confirmation (it goes to
+the Nextcloud trash). Offline, the operation is queued like any service call. Editing, custom
+splits and foreign currencies from the card arrive in the next milestone. Set `allow_write: false`
+for a read-only dashboard. The card is built when a release is published: a copy of the repository
 without a release has the integration but no card.
 
 ## Services
@@ -143,7 +147,7 @@ avec les mêmes fonctionnalités que l'application Android [Cowspent](https://gi
 
 Connexion : adresse web (http / https) **ou** adresse IP locale + port, au choix, à l'installation comme à la reconfiguration. Avec une IP, ajoutez-la aux `trusted_domains` de Nextcloud (`occ config:system:set trusted_domains 2 --value=192.168.1.20`).
 
-Carte Lovelace (`custom:cospend-card`) : soldes, liste des dépenses (répartitions personnalisées regroupées), recherche et détail avec la part de chacun. Elle suit le thème de Home Assistant, se met à jour toute seule et s'ajoute depuis le sélecteur de cartes (éditeur visuel inclus). La création et la modification depuis la carte arrivent au jalon suivant.
+Carte Lovelace (`custom:cospend-card`) : soldes, liste des dépenses (répartitions personnalisées regroupées), recherche et détail avec la part de chacun. Elle suit le thème de Home Assistant, se met à jour toute seule et s'ajoute depuis le sélecteur de cartes (éditeur visuel inclus). On peut y ajouter une dépense (répartition égale) et en supprimer une après confirmation (corbeille de Nextcloud) ; hors ligne, l'opération est mise en file d'attente. `allow_write: false` rend la carte en lecture seule. La modification, les répartitions personnalisées et les devises arrivent au jalon suivant.
 
 Prévu : choix des projets à connecter, services pour créer / modifier / supprimer des dépenses depuis
 les automatisations, mode hors ligne (file d'attente sans doublons), carte Lovelace complète.
