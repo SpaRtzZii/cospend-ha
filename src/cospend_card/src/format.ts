@@ -82,3 +82,34 @@ export function balanceWidth(balance: number, members: Member[]): number {
 export function projectKey(project: Pick<Project, "entry_id" | "id">): string {
   return `${project.entry_id}:${project.id}`;
 }
+
+/** Catégorie interne de Cospend pour les remboursements (absente de la liste du projet). */
+export const REIMBURSEMENT_CATEGORY_ID = -11;
+
+export interface CategoryView {
+  icon: string;
+  name: string;
+  color: string;
+}
+
+/**
+ * Catégorie à afficher pour une dépense. ``null`` quand il n'y en a pas (catégorie 0 ou inconnue) :
+ * Cospend n'affiche alors aucune icône.
+ */
+export function categoryView(
+  project: Pick<Project, "categories">,
+  id: number,
+  reimbursementName: string,
+): CategoryView | null {
+  if (id === REIMBURSEMENT_CATEGORY_ID) return { icon: "💰", name: reimbursementName, color: "" };
+  const category = project.categories.find((item) => item.id === id);
+  if (!category) return null;
+  return { icon: category.icon, name: category.name, color: category.color };
+}
+
+/** Fond de la pastille d'une catégorie : sa couleur adoucie, sinon le fond neutre du thème. */
+export function categoryBackground(color: string): string {
+  return /^#[0-9a-f]{3,8}$/i.test(color)
+    ? `color-mix(in srgb, ${color} 22%, transparent)`
+    : "var(--secondary-background-color)";
+}

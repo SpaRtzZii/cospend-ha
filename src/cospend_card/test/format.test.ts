@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import {
   balanceWidth,
+  categoryBackground,
+  categoryView,
   formatAmount,
   formatDate,
   initials,
@@ -98,5 +100,28 @@ describe("traductions", () => {
     expect(translate("de", "paid_by", { name: "Léa" })).toBe("Paid by Léa");
     expect(pickLanguage("fr-CA")).toBe("fr");
     expect(translate("en", "clé-inconnue")).toBe("clé-inconnue");
+  });
+});
+
+describe("catégories", () => {
+  const project = { categories: [{ id: 5, name: "Courses", icon: "🛒", color: "#ffaa00" }] };
+
+  it("trouve la catégorie du projet", () => {
+    expect(categoryView(project, 5, "Remb.")).toEqual({ icon: "🛒", name: "Courses", color: "#ffaa00" });
+  });
+  it("gère la catégorie interne des remboursements", () => {
+    expect(categoryView(project, -11, "Remboursement")).toMatchObject({
+      icon: "💰",
+      name: "Remboursement",
+    });
+  });
+  it("renvoie null sans catégorie ou pour une catégorie inconnue", () => {
+    expect(categoryView(project, 0, "R")).toBeNull();
+    expect(categoryView(project, 99, "R")).toBeNull();
+  });
+  it("adoucit la couleur de la catégorie", () => {
+    expect(categoryBackground("#ffaa00")).toContain("color-mix");
+    expect(categoryBackground("")).toBe("var(--secondary-background-color)");
+    expect(categoryBackground("rouge")).toBe("var(--secondary-background-color)");
   });
 });
