@@ -13,7 +13,12 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 - Commande websocket `cospend/settlement`.
 - Bibliothèque `aiocospend` 0.7.0 : `suggest_settlement` (plan local, en centimes) et prise en
   charge de la catégorie Remboursement (−11) à la création d'une dépense.
-- À vérifier sur un vrai serveur : l'acceptation de la catégorie −11 à la création.
+- Catégorie −11 à la création : acceptée par un serveur réel (vérifié).
+
+### Corrigé (M7a)
+- Dépenses affichées un jour trop tôt (J-1) : le serveur renseigne `date` en UTC, alors que Cospend
+  affiche l'horodatage dans le fuseau de l'utilisateur. Le jour est désormais calculé depuis
+  l'horodatage dans le fuseau de Home Assistant (carte, capteur, événements).
 
 ### Corrigé (M6c, d'après les essais sur serveur réel)
 - Nouvelle option de carte `allow_manage` (case dans l'éditeur visuel) : cochée, la roue crantée

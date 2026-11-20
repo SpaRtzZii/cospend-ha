@@ -19,6 +19,7 @@ from homeassistant.helpers.typing import StateType
 from homeassistant.util import dt as dt_util
 
 from .coordinator import CospendConfigEntry, CospendCoordinator, ProjectData
+from .dates import bill_local_date
 from .entity import CospendEntity
 
 PARALLEL_UPDATES = 0
@@ -117,7 +118,7 @@ def _last_bill_attributes(data: ProjectData) -> dict[str, Any]:
     owers = [m.name for m in (data.project.member(i) for i in bill.ower_ids) if m]
     return {
         "bill_id": bill.id,
-        "date": bill.date,
+        "date": bill_local_date(bill),
         "amount": bill.amount,
         "payer": payer.name if payer else None,
         "owers": owers,
