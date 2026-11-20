@@ -112,6 +112,13 @@ def _rate(value: Any) -> Decimal:
     return rate
 
 
+def _repeat_until_or_clear(value: Any) -> str:
+    """Date de fin de récurrence ; une chaîne vide la retire."""
+    if value is None or str(value).strip() == "":
+        return ""
+    return cv.date(value).isoformat()
+
+
 _ADD_SCHEMA = vol.Schema(
     {
         vol.Required(ATTR_PROJECT): _REF,
@@ -148,6 +155,12 @@ _UPDATE_SCHEMA = vol.Schema(
         vol.Optional(ATTR_PAYMENT_MODE): _REF,
         vol.Optional(ATTR_DATE): _when,
         vol.Optional(ATTR_COMMENT): cv.string,
+        vol.Optional(ATTR_CURRENCY): cv.string,
+        vol.Optional(ATTR_EXCHANGE_RATE): _rate,
+        vol.Optional(ATTR_REPEAT): vol.In(REPEAT_CODES),
+        vol.Optional(ATTR_REPEAT_FREQUENCY): vol.All(vol.Coerce(int), vol.Range(min=1, max=999)),
+        vol.Optional(ATTR_REPEAT_UNTIL): _repeat_until_or_clear,
+        vol.Optional(ATTR_REPEAT_ALL_ACTIVE): cv.boolean,
     }
 )
 
@@ -385,6 +398,14 @@ async def _async_update_bill(call: ServiceCall) -> ServiceResponse:
             comment=data.get(ATTR_COMMENT),
             category=data.get(ATTR_CATEGORY),
             payment_mode=data.get(ATTR_PAYMENT_MODE),
+            currency=data.get(ATTR_CURRENCY),
+            exchange_rate=data.get(ATTR_EXCHANGE_RATE),
+            repeat=data.get(ATTR_REPEAT),
+            repeat_freq=data.get(ATTR_REPEAT_FREQUENCY),
+            repeat_until=data.get(ATTR_REPEAT_UNTIL),
+            repeat_all_active=(
+                int(data[ATTR_REPEAT_ALL_ACTIVE]) if ATTR_REPEAT_ALL_ACTIVE in data else None
+            ),
         )
     )
     project_id = project_data.project.id

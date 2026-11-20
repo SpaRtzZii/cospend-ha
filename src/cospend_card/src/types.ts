@@ -78,6 +78,9 @@ export interface BillItem {
   shares?: Share[];
   repeat_freq?: number;
   repeat_until?: string | null;
+  repeat_all_active?: boolean;
+  /** Poids inégaux des participants : une modification les remet à égalité. */
+  uneven_weights?: boolean;
 }
 
 export interface BillsPage {

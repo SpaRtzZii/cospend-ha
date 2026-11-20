@@ -257,7 +257,7 @@
     },
     "update_bill": {
       "name": "Modifier une dépense",
-      "description": "Change certains champs d'une dépense existante. Seuls les champs fournis sont modifiés. Le montant et les participants d'une dépense à répartition personnalisée ne sont pas modifiables. Si Cospend est injoignable, l'opération est mise en file d'attente et envoyée plus tard.",
+      "description": "Change certains champs d'une dépense existante. Seuls les champs fournis sont modifiés. Le montant, la devise et les participants d'une dépense à répartition personnalisée ne sont pas modifiables. Si Cospend est injoignable, l'opération est mise en file d'attente et envoyée plus tard.",
       "fields": {
         "project": {
           "name": "Projet",
@@ -298,6 +298,30 @@
         "comment": {
           "name": "Commentaire",
           "description": "Nouveau commentaire."
+        },
+        "currency": {
+          "name": "Devise",
+          "description": "Code de la devise étrangère ; demande le montant, qui est alors celui de cette devise. Sans elle, le montant est dans la devise du projet."
+        },
+        "exchange_rate": {
+          "name": "Taux de change",
+          "description": "Valeur d'une unité de la devise étrangère dans la devise du projet. Repris du projet si vide."
+        },
+        "repeat": {
+          "name": "Répétition",
+          "description": "Nouvelle récurrence de la dépense."
+        },
+        "repeat_frequency": {
+          "name": "Répéter tous les",
+          "description": "Nombre de périodes entre deux occurrences."
+        },
+        "repeat_until": {
+          "name": "Répéter jusqu'au",
+          "description": "Dernier jour de la récurrence (AAAA-MM-JJ). Un texte vide retire la date de fin."
+        },
+        "repeat_all_active": {
+          "name": "Tous les membres actifs",
+          "description": "Inclure dans la récurrence les membres ajoutés plus tard."
         }
       }
     },

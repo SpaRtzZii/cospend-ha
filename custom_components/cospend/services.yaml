@@ -125,6 +125,40 @@ update_bill:
       selector:
         text:
           multiline: true
+    currency:
+      example: USD
+      selector:
+        text:
+    exchange_rate:
+      selector:
+        number:
+          min: 0
+          step: any
+          mode: box
+    repeat:
+      selector:
+        select:
+          translation_key: repeat
+          options:
+            - n
+            - d
+            - w
+            - b
+            - s
+            - m
+            - y
+    repeat_frequency:
+      selector:
+        number:
+          min: 1
+          max: 999
+          mode: box
+    repeat_until:
+      selector:
+        text:
+    repeat_all_active:
+      selector:
+        boolean:
 delete_bill:
   fields:
     project:

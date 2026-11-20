@@ -51,6 +51,7 @@ class CospendCard extends LitElement {
     _search: { state: true },
     _detail: { state: true },
     _form: { state: true },
+    _editing: { state: true },
     _confirming: { state: true },
     _busy: { state: true },
     _notice: { state: true },
@@ -68,6 +69,7 @@ class CospendCard extends LitElement {
   declare _search: string;
   declare _detail: BillItem | null;
   declare _form: boolean;
+  declare _editing: boolean;
   declare _confirming: boolean;
   declare _busy: boolean;
   declare _notice: { kind: "ok" | "error"; text: string } | null;
@@ -92,6 +94,7 @@ class CospendCard extends LitElement {
     this._search = "";
     this._detail = null;
     this._form = false;
+    this._editing = false;
     this._confirming = false;
     this._busy = false;
     this._notice = null;
@@ -313,9 +316,12 @@ class CospendCard extends LitElement {
     this._noticeTimer = setTimeout(() => (this._notice = null), 6000);
   }
 
-  private async _onSaved(event: CustomEvent<WriteResult>): Promise<void> {
+  private async _onSaved(event: CustomEvent<WriteResult & { edited?: boolean }>): Promise<void> {
     this._form = false;
-    this._announce("ok", this._t(event.detail?.queued ? "saved_queued" : "saved"));
+    const edited = Boolean(event.detail?.edited);
+    const queued = Boolean(event.detail?.queued);
+    this._editing = false;
+    this._announce("ok", this._t(`${edited ? "edited" : "saved"}${queued ? "_queued" : ""}`));
     await this._refresh();
   }
 
@@ -359,8 +365,13 @@ class CospendCard extends LitElement {
       ? html`<cospend-bill-form
           .hass=${this.hass}
           .project=${project}
-          @cancel=${() => (this._form = false)}
-          @saved=${(event: CustomEvent<WriteResult>) => void this._onSaved(event)}
+          .bill=${this._editing ? (this._detail ?? undefined) : undefined}
+          @cancel=${() => {
+            this._form = false;
+            this._editing = false;
+          }}
+          @saved=${(event: CustomEvent<WriteResult & { edited?: boolean }>) =>
+            void this._onSaved(event)}
         ></cospend-bill-form>`
       : this._detail
       ? this._renderDetail(project, this._detail)
@@ -481,7 +492,13 @@ class CospendCard extends LitElement {
         <div class="section-head">
           <h3>${this._t("bills")}</h3>
           ${this._canWrite(project)
-            ? html`<button class="add" @click=${() => (this._form = true)}>
+            ? html`<button
+                class="add"
+                @click=${() => {
+                  this._editing = false;
+                  this._form = true;
+                }}
+              >
                 <ha-icon icon="mdi:plus"></ha-icon> ${this._t("add_bill")}
               </button>`
             : nothing}
@@ -580,9 +597,20 @@ class CospendCard extends LitElement {
 
   private _renderDelete(item: BillItem): TemplateResult {
     if (!this._confirming) {
-      return html`<button class="danger" @click=${() => (this._confirming = true)}>
-        <ha-icon icon="mdi:delete-outline"></ha-icon> ${this._t("delete")}
-      </button>`;
+      return html`<div class="detail-actions">
+        <button
+          class="secondary"
+          @click=${() => {
+            this._editing = true;
+            this._form = true;
+          }}
+        >
+          <ha-icon icon="mdi:pencil-outline"></ha-icon> ${this._t("edit")}
+        </button>
+        <button class="danger" @click=${() => (this._confirming = true)}>
+          <ha-icon icon="mdi:delete-outline"></ha-icon> ${this._t("delete")}
+        </button>
+      </div>`;
     }
     return html`<div class="confirm" role="alertdialog">
       <p>${this._t(item.is_group ? "confirm_delete_group" : "confirm_delete")}</p>
@@ -788,6 +816,17 @@ class CospendCard extends LitElement {
     }
     button.add ha-icon,
     button.danger ha-icon {
+      --mdc-icon-size: 18px;
+    }
+    .detail-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .detail-actions button {
+      margin-top: 0 !important;
+    }
+    button.secondary ha-icon {
       --mdc-icon-size: 18px;
     }
     button.danger {

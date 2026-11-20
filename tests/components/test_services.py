@@ -314,3 +314,37 @@ async def test_add_bill_as_the_card_sends_it(
     assert tuple(bill["payed_for"]) == (12, 13)
     assert (bill["category_id"], bill["payment_mode_id"]) == (35, 0)
     assert bill["date"] == "2026-11-20"
+
+
+async def test_update_bill_currency_and_repeat(
+    hass: HomeAssistant, init_integration, fake_client: FakeClient
+) -> None:
+    await call(
+        hass,
+        "update_bill",
+        project=PROJECT,
+        bill_id=30,
+        amount="100",
+        currency="USD",
+        exchange_rate="0,92",
+        repeat="m",
+        repeat_frequency=2,
+        repeat_until="2027-01-31",
+        repeat_all_active=True,
+    )
+    bill = fake_client.bills[30]
+    assert bill.amount == 92.0
+    assert bill.comment.endswith("#USD:100@0.92")
+    assert (bill.repeat, bill.repeat_freq, bill.repeat_until, bill.repeat_all_active) == (
+        "m",
+        2,
+        "2027-01-31",
+        1,
+    )
+    await call(hass, "update_bill", project=PROJECT, bill_id=30, repeat_until="")
+    assert fake_client.bills[30].repeat_until == ""
+
+
+async def test_update_bill_currency_needs_the_amount(hass: HomeAssistant, init_integration) -> None:
+    with pytest.raises(ServiceValidationError):
+        await call(hass, "update_bill", project=PROJECT, bill_id=30, currency="USD")
