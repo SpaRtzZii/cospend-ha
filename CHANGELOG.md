@@ -5,6 +5,10 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 ## [Non publié]
 
 ### Corrigé (M6c, d'après les essais sur serveur réel)
+- Modification d'une catégorie, d'un mode de paiement ou d'une devise : erreur HTTP 400. Cospend
+  attend l'objet complet (nom, icône et couleur ; nom et taux) : les services renvoient désormais
+  l'état actuel complété par les changements. Même principe pour un membre, dont la couleur
+  changeait à la réactivation (poids et couleur actuels conservés).
 - Création d'une catégorie, d'un mode de paiement ou d'une devise : erreur 404. Cospend nomme ces
   routes au singulier (`category`, `paymentmode`, `currency`) ; la bibliothèque les essaie dans
   cet ordre puis retente l'autre forme sur un 404. `aiocospend` 0.6.1.

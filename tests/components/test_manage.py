@@ -52,7 +52,8 @@ async def test_update_member_resolves_the_name(
     assert response["id"] == 13
     ((name, args, kwargs),) = writes(fake_client)
     assert (name, args) == ("update_member", (PROJECT, 13))
-    assert kwargs == {"name": "Bob", "weight": None, "color": None, "activated": False}
+    # Cospend remplace le membre en entier : poids et couleur actuels sont renvoyés
+    assert kwargs == {"name": "Bob", "weight": 1.0, "color": "#6ea68f", "activated": False}
 
 
 async def test_update_member_by_id(
@@ -98,6 +99,12 @@ async def test_categories_and_payment_modes(
     ]
     assert calls[0][2] == {"icon": "🎾", "color": "#112233"}
     assert calls[1][1] == (PROJECT, 35)
+    # nom, icône et couleur sont toujours envoyés ensemble (sinon HTTP 400 côté Cospend)
+    assert set(calls[1][2]) == {"name", "icon", "color"}
+    assert calls[1][2]["name"] == "Alimentation"
+    assert set(calls[4][2]) == {"name", "icon", "color"}
+    assert calls[4][2]["color"] == "#00ff00"
+    assert calls[4][2]["name"] == "Liquide"
     assert calls[2][1] == (PROJECT, 37)
     assert calls[3][2] == {"icon": "", "color": "#888888"}  # couleur par défaut exigée par Cospend
     assert calls[4][1] == (PROJECT, 17)
@@ -123,7 +130,7 @@ async def test_update_and_delete_currency(
     await call(hass, "delete_currency", currency="USD")
     calls = writes(fake_client)
     assert calls[0][:2] == ("update_currency", (PROJECT, 5))
-    assert calls[0][2]["rate"] == Decimal("0.95")
+    assert calls[0][2] == {"name": "USD", "rate": Decimal("0.95")}
     assert calls[1][:2] == ("delete_currency", (PROJECT, 5))
 
 
@@ -171,7 +178,7 @@ async def test_add_member_reactivates_a_disabled_one(
     assert response == {"project": PROJECT, "id": members[0].id, "reactivated": True}
     ((name, args, kwargs),) = writes(fake_client)
     assert (name, args) == ("update_member", (PROJECT, members[0].id))
-    assert kwargs == {"weight": 2.0, "color": None, "activated": True}
+    assert kwargs == {"name": "util1", "weight": 2.0, "color": "#499aa2", "activated": True}
 
 
 async def test_add_member_refuses_an_active_name(

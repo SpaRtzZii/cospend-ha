@@ -58,6 +58,10 @@ class _MemberExists(Exception):
 Handler = Callable[[ServiceCall], Awaitable[ServiceResponse]]
 
 
+def _hex(rgb: tuple[int, int, int] | None) -> str | None:
+    return None if rgb is None else "#{:02x}{:02x}{:02x}".format(*rgb)
+
+
 def _check_maintainer(project: Project) -> None:
     if project.access_level < MAINTAINER_LEVEL:
         raise _error("needs_maintainer", project=project.name)
@@ -146,8 +150,9 @@ async def _add_member(call: ServiceCall) -> ServiceResponse:
         await client.update_member(
             pid,
             existing.id,
-            weight=d.get(ATTR_WEIGHT),
-            color=d.get(ATTR_COLOR),
+            name=existing.name,
+            weight=d.get(ATTR_WEIGHT, existing.weight),
+            color=d.get(ATTR_COLOR, _hex(existing.color)),
             activated=True,
         )
         extra["reactivated"] = True
@@ -160,13 +165,16 @@ async def _update_member(call: ServiceCall) -> ServiceResponse:
     d = call.data
 
     async def run(client, pid, project, item):  # type: ignore[no-untyped-def]
+        # Cospend remplace le membre en entier : un champ absent est remis à zéro (la couleur
+        # change au hasard). On renvoie donc l'état actuel complété par les changements.
+        current = project.member(item)
         await client.update_member(
             pid,
             item,
-            name=d.get(ATTR_NEW_NAME),
-            weight=d.get(ATTR_WEIGHT),
-            color=d.get(ATTR_COLOR),
-            activated=d.get(ATTR_ACTIVE),
+            name=d.get(ATTR_NEW_NAME, current.name),
+            weight=d.get(ATTR_WEIGHT, current.weight),
+            color=d.get(ATTR_COLOR, _hex(current.color)),
+            activated=d.get(ATTR_ACTIVE, current.activated),
         )
 
     return await _manage(call, ATTR_MEMBER, run)
@@ -201,8 +209,15 @@ def _labelled(kind: str, attr: str) -> tuple[Handler, Handler, Handler]:
 
         async def run(client, pid, project, item):  # type: ignore[no-untyped-def]
             change = client.update_category if kind == "category" else client.update_payment_mode
+            items = project.categories if kind == "category" else project.payment_modes
+            current = next(i for i in items if i.id == item)
+            # Cospend exige nom, icône et couleur à chaque modification.
             await change(
-                pid, item, name=d.get(ATTR_NEW_NAME), icon=d.get(ATTR_ICON), color=d.get(ATTR_COLOR)
+                pid,
+                item,
+                name=d.get(ATTR_NEW_NAME, current.name),
+                icon=d.get(ATTR_ICON, current.icon or ""),
+                color=d.get(ATTR_COLOR, current.color or DEFAULT_COLOR),
             )
 
         return await _manage(call, attr, run)
@@ -233,7 +248,13 @@ async def _update_currency(call: ServiceCall) -> ServiceResponse:
     d = call.data
 
     async def run(client, pid, project, item):  # type: ignore[no-untyped-def]
-        await client.update_currency(pid, item, name=d.get(ATTR_NEW_NAME), rate=d.get(ATTR_RATE))
+        current = next(c for c in project.currencies if c.id == item)
+        await client.update_currency(
+            pid,
+            item,
+            name=d.get(ATTR_NEW_NAME, current.name),
+            rate=d.get(ATTR_RATE, current.exchange_rate),
+        )
 
     return await _manage(call, ATTR_CURRENCY, run)
 
