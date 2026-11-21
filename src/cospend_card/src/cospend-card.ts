@@ -225,17 +225,32 @@ class CospendCard extends LitElement {
     return this._projects?.find((project) => projectKey(project) === this._selected);
   }
 
-  /** Projets proposés : celui de la configuration, sinon tous (archivés exclus). */
+  private get _projectSelect(): boolean {
+    return this._config?.show_project_select !== false;
+  }
+
+  /**
+   * Projets proposés. Avec le menu déroulant (par défaut), tous les projets non archivés, plus celui
+   * de la configuration, qui sert de choix de départ. Sans menu, le projet de la configuration seul.
+   */
   private _visibleProjects(projects: Project[]): Project[] {
     const wanted = this._config?.project;
-    if (wanted) {
-      return projects.filter(
-        (project) =>
-          project.id === wanted &&
-          (!this._config?.entry_id || project.entry_id === this._config.entry_id),
-      );
-    }
-    return projects.filter((project) => !project.archived);
+    const isWanted = (project: Project) =>
+      project.id === wanted && (!this._config?.entry_id || project.entry_id === this._config.entry_id);
+    if (wanted && !this._projectSelect) return projects.filter(isWanted);
+    return projects.filter((project) => !project.archived || (wanted !== undefined && isWanted(project)));
+  }
+
+  /** Projet affiché au départ : celui de la configuration s'il est proposé, sinon le premier. */
+  private _initialProject(visible: Project[]): string | null {
+    const wanted = this._config?.project;
+    const first =
+      (wanted &&
+        visible.find(
+          (p) => p.id === wanted && (!this._config?.entry_id || p.entry_id === this._config.entry_id),
+        )) ||
+      visible[0];
+    return first ? projectKey(first) : null;
   }
 
   private async _load(): Promise<void> {
@@ -247,7 +262,7 @@ class CospendCard extends LitElement {
       const visible = this._visibleProjects(all);
       this._projects = visible;
       if (!visible.some((project) => projectKey(project) === this._selected)) {
-        this._selected = visible[0] ? projectKey(visible[0]) : null;
+        this._selected = this._initialProject(visible);
         this._detail = null;
       }
       await this._loadBills(true);
@@ -265,7 +280,7 @@ class CospendCard extends LitElement {
       const visible = this._visibleProjects(await fetchProjects(this.hass));
       this._projects = visible;
       if (!visible.some((project) => projectKey(project) === this._selected)) {
-        this._selected = visible[0] ? projectKey(visible[0]) : null;
+        this._selected = this._initialProject(visible);
         this._detail = null;
       }
       await this._loadBills(true, Math.max(this._bills.length, this._pageSize));
@@ -530,14 +545,18 @@ class CospendCard extends LitElement {
                 : nothing}
             </div>`
           : nothing}
-        ${showBills ? html`<div class="col-right">${this._renderRight(project)}</div>` : nothing}
+        ${showBills
+          ? html`<div class="col-right"><section class="panel">${this._renderRight(project)}</section></div>`
+          : nothing}
       </div>
     `;
   }
 
   private _shell(title: string | undefined, body: unknown, project?: Project): TemplateResult {
     const projects = this._projects ?? [];
-    const chooser = !this._config?.project && projects.length > 1;
+    const screen =
+      this._manage || (!this._isWide && (this._form || this._settle || this._stats || this._balances));
+    const chooser = this._projectSelect && projects.length > 0 && project !== undefined && !screen;
     return html`
       <ha-card>
         <div class="header">
@@ -606,8 +625,9 @@ class CospendCard extends LitElement {
                 <ha-icon icon="mdi:cog-outline"></ha-icon>
               </button>`
             : nothing}
-          ${chooser
-            ? html`<select
+        </div>
+      ${chooser
+            ? html`<div class="project-row"><select
                 class="project-select"
                 aria-label=${this._t("project")}
                 @change=${this._onProject}
@@ -620,9 +640,8 @@ class CospendCard extends LitElement {
                     ${item.name}
                   </option>`,
                 )}
-              </select>`
+              </select></div>`
             : nothing}
-        </div>
         ${this._notice
           ? html`<p class="banner ${this._notice.kind === "ok" ? "ok" : "error"}" role="status">
               ${this._notice.text}
@@ -919,6 +938,12 @@ class CospendCard extends LitElement {
     }
     .chip ha-icon {
       --mdc-icon-size: 14px;
+    }
+    .project-row {
+      padding: 0 16px 4px;
+    }
+    .project-select {
+      max-width: 100%;
     }
     .project-select,
     .search {

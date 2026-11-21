@@ -108,6 +108,8 @@ export interface CospendCardConfig {
   show_settlement?: boolean;
   /** Bouton « Statistiques » (tableau, graphiques, Sankey) ; vrai par défaut. */
   show_stats?: boolean;
+  /** Menu déroulant de choix du projet sous le titre ; vrai par défaut (le projet configuré est le choix de départ). */
+  show_project_select?: boolean;
   /** Disposition en deux colonnes quand la carte est large (panneau) ; vrai par défaut. */
   wide_layout?: boolean;
   /** Soldes affichés sur la carte, au-dessus des dépenses ; sinon dans un écran à part (faux par défaut). */

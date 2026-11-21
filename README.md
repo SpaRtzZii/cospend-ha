@@ -49,6 +49,7 @@ show_search: true          # search field
 allow_write: true          # add / delete expenses from the card
 show_settlement: true      # "Settle up" button: who owes whom, with one-tap reimbursement
 show_stats: true           # "Statistics" button: table, charts and flow diagram, with filters
+show_project_select: true   # project drop-down under the title (the configured project is the starting choice)
 wide_layout: true          # two columns when the card is wide (panel view), see below
 allow_manage: false        # project settings (gear): true = every user, false = Home Assistant administrators only
 page_size: 20              # expenses loaded at a time

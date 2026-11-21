@@ -185,16 +185,33 @@ describe("cospend-card", () => {
     expect(card.shadowRoot!.querySelectorAll(".row .icon ha-icon")).toHaveLength(1);
   });
 
-  it("masque le sélecteur quand le projet est fixé et le propose sinon", async () => {
+  it("propose le menu des projets sous le titre, même pour un seul projet, et le masque sur demande", async () => {
+    const other = project({ id: "maison", name: "Maison" });
+    const both = makeHass([project(), other], []).hass;
+    const card = await mount(both);
+    const select = card.shadowRoot!.querySelector(".project-select") as HTMLSelectElement;
+    expect(select.options).toHaveLength(2);
+    expect(card.shadowRoot!.querySelector(".header .project-select")).toBeNull();
+    document.body.innerHTML = "";
+    const single = await mount(makeHass([project()], []).hass);
+    expect(single.shadowRoot!.querySelector(".project-select")).not.toBeNull();
+    document.body.innerHTML = "";
+    const off = await mount(both, { show_project_select: false });
+    expect(off.shadowRoot!.querySelector(".project-select")).toBeNull();
+  });
+
+  it("le projet configuré est le choix de départ ; sans menu, il est seul proposé", async () => {
     const other = project({ id: "maison", name: "Maison" });
     const { hass } = makeHass([project(), other], []);
-    expect(
-      (await mount(hass)).shadowRoot!.querySelector(".project-select"),
-    ).not.toBeNull();
-    document.body.innerHTML = "";
     const fixed = await mount(hass, { project: "maison" });
-    expect(fixed.shadowRoot!.querySelector(".project-select")).toBeNull();
+    const select = fixed.shadowRoot!.querySelector(".project-select") as HTMLSelectElement;
+    expect(select.options).toHaveLength(2);
+    expect(select.value).toBe("e1:maison");
     expect(text(fixed)).toContain("Maison");
+    document.body.innerHTML = "";
+    const only = await mount(hass, { project: "maison", show_project_select: false });
+    expect(only.shadowRoot!.querySelector(".project-select")).toBeNull();
+    expect(text(only)).toContain("Maison");
   });
 
   it("n'affiche pas les projets archivés sauf s'ils sont choisis", async () => {
