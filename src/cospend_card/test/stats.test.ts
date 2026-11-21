@@ -142,7 +142,8 @@ describe("cospend-stats", () => {
     const element = await mount(stats());
     await click(element, '[data-tab="chart"]');
     expect(root(element).querySelectorAll("svg.months g")).toHaveLength(2);
-    expect(root(element).querySelectorAll("ul.bars li")).toHaveLength(2);
+    expect(root(element).querySelectorAll("ul.bars:not(.members) li")).toHaveLength(2);
+    expect(root(element).querySelectorAll("ul.bars.members li")).toHaveLength(2);
   });
 
   it("montre le diagramme de Sankey avec un flux par lien", async () => {

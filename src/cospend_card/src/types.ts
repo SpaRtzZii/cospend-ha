@@ -202,3 +202,26 @@ export interface HassLike {
     ): Promise<() => void>;
   };
 }
+
+export type ChartKind = "months" | "categories" | "members" | "flows" | "balances";
+
+export type ChartPeriod = "all" | "month" | "last_month" | "last_30" | "year";
+
+/** Configuration de la carte ``custom:cospend-chart-card`` (un seul graphique). */
+export interface CospendChartCardConfig {
+  type: string;
+  title?: string;
+  project?: string;
+  entry_id?: string;
+  /** Graphique affiché ; « months » par défaut. */
+  chart?: ChartKind;
+  /** Période ; « month » (mois en cours) par défaut. */
+  period?: ChartPeriod;
+  /** Ne compte que les dépenses payées par ce membre (identifiant). */
+  payer?: number;
+  /** Ne compte que cette catégorie (identifiant ; 0 = sans catégorie). */
+  category?: number;
+  include_reimbursements?: boolean;
+  /** Total et nombre de dépenses sous le titre ; vrai par défaut. */
+  show_total?: boolean;
+}
