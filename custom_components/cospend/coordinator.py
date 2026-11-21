@@ -25,6 +25,7 @@ from aiocospend import (
     ProjectStatistics,
 )
 
+from .cache import ProjectCache
 from .const import (
     CONF_FULL_RESYNC_HOURS,
     CONF_PROJECTS,
@@ -75,6 +76,9 @@ class CospendCoordinator(DataUpdateCoordinator[dict[str, ProjectData]]):
         )
         self.client = client
         self.queue = OperationQueue(hass, entry.entry_id)
+        self.cache = ProjectCache(hass, entry.entry_id)
+        #: Vrai tant que les données viennent de la copie locale (Cospend injoignable au démarrage).
+        self.restored = False
         self._full_resync_seconds = (
             entry.options.get(CONF_FULL_RESYNC_HOURS, DEFAULT_FULL_RESYNC_HOURS) * 3600
         )
@@ -98,7 +102,39 @@ class CospendCoordinator(DataUpdateCoordinator[dict[str, ProjectData]]):
             raise ConfigEntryAuthFailed("Identifiants Cospend refusés") from err
         except CospendError as err:
             raise UpdateFailed(f"Erreur de communication avec Cospend : {err}") from err
+        self.restored = False
+        self.cache.schedule_save(
+            {pid: (item.project, item.bills, item.statistics) for pid, item in result.items()}
+        )
         return result
+
+    async def async_restore_from_cache(self) -> bool:
+        """Repart de la copie locale quand la première lecture échoue ; faux s'il n'y en a pas.
+
+        Les données restent marquées « indisponibles » (la dernière lecture a échoué) : la carte
+        affiche la copie en lecture, les écritures sont mises en file d'attente, et la prochaine
+        lecture réussie remplace tout (synchronisation complète, sans événements).
+        """
+        cached = await self.cache.async_load()
+        wanted = self.config_entry.options.get(CONF_PROJECTS, [])
+        data: dict[str, ProjectData] = {}
+        for project_id in wanted:
+            if project_id not in cached:
+                continue
+            project, bills, statistics = cached[project_id]
+            store = self._stores.setdefault(project_id, ProjectBills(project_id))
+            store.bills = {bill.id: bill for bill in bills}
+            if statistics is not None:
+                self._statistics[project_id] = statistics
+            data[project_id] = ProjectData(project, store.bills, statistics)
+        if not data:
+            return False
+        self.data = data
+        self.restored = True
+        _LOGGER.warning(
+            "Cospend injoignable : données de la copie locale utilisées en attendant le serveur"
+        )
+        return True
 
     async def _async_update_project(self, project: Project) -> ProjectData:
         store = self._stores.setdefault(project.id, ProjectBills(project.id))

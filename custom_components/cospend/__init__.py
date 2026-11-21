@@ -16,6 +16,7 @@ from homeassistant.const import (
     Platform,
 )
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.event import async_track_time_interval
@@ -24,6 +25,7 @@ from homeassistant.loader import async_get_integration
 
 from aiocospend import CospendClient
 
+from .cache import ProjectCache
 from .const import DOMAIN, FLUSH_INTERVAL_SECONDS
 from .coordinator import CospendConfigEntry, CospendCoordinator
 from .manage import async_setup_manage_services
@@ -76,7 +78,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: CospendConfigEntry) -> b
     )
     coordinator = CospendCoordinator(hass, entry, client)
     await coordinator.queue.async_load()
-    await coordinator.async_config_entry_first_refresh()
+    try:
+        await coordinator.async_config_entry_first_refresh()
+    except ConfigEntryNotReady:
+        # Cospend injoignable au lancement : on repart de la copie locale, sinon on réessaiera.
+        if not await coordinator.async_restore_from_cache():
+            raise
     entry.runtime_data = coordinator
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
@@ -84,6 +91,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: CospendConfigEntry) -> b
 
     async def _flush(_: datetime | None = None) -> None:
         await async_flush(coordinator)
+
+    async def _retry(_: datetime | None = None) -> None:
+        if coordinator.restored:
+            await coordinator.async_refresh()
+
+    # Tant que les données viennent de la copie locale, on réessaie chaque minute.
+    entry.async_on_unload(
+        async_track_time_interval(hass, _retry, timedelta(seconds=FLUSH_INTERVAL_SECONDS))
+    )
 
     # Rejeu des écritures en attente : au démarrage, puis toutes les minutes.
     entry.async_create_background_task(hass, _flush(), f"{DOMAIN} flush {entry.entry_id}")
@@ -107,3 +123,4 @@ async def async_remove_entry(hass: HomeAssistant, entry: CospendConfigEntry) -> 
     queue = OperationQueue(hass, entry.entry_id)
     await queue.async_load()
     await queue.async_remove_storage()
+    await ProjectCache(hass, entry.entry_id).async_remove()

@@ -104,6 +104,15 @@ allow_write: true          # false = buttons disabled (read only)
 The buttons are disabled when the Nextcloud account cannot write to the project. Offline, the
 operation is queued like on the main card.
 
+### Starting while Nextcloud is down
+
+After every successful read the integration keeps a local copy of your projects and expenses.
+If Nextcloud cannot be reached when Home Assistant starts (server off, network not ready yet),
+the integration starts from that copy instead of waiting: the sensors, the cards and the expense
+list are available, the project is shown as unavailable, and new operations go to the offline
+queue. It retries every minute and replaces the copy as soon as the server answers. On the very
+first start (no copy yet) the setup is retried as before.
+
 The card follows your Home Assistant theme (light, dark, custom themes) and language (English and
 French). It shows the expense list (custom splits are shown as one expense), a search
 and the detail of each expense with everyone's share. It updates on its own and shows the
