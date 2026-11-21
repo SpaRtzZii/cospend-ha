@@ -16,8 +16,6 @@ jobs:
       - uses: hacs/action@main
         with:
           category: integration
-          # Les images de marque seront ajoutées avant la première publication.
-          ignore: brands
 
   hassfest:
     name: hassfest

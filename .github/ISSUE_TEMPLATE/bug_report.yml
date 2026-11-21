@@ -1,25 +1,25 @@
-name: Signaler un bug
-description: Quelque chose ne fonctionne pas comme prévu
+name: Bug report / Signaler un bug
+description: Something does not work as expected / Quelque chose ne fonctionne pas
 labels: [bug]
 body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happens? / Que se passe-t-il ?
+      description: Steps to reproduce, what you expected / Étapes pour reproduire, résultat attendu
+    validations:
+      required: true
   - type: input
     id: versions
     attributes:
       label: Versions
-      description: Home Assistant, cospend-ha, Nextcloud et application Cospend
-      placeholder: "HA 2026.11 / cospend-ha 0.1.0 / Nextcloud 32 / Cospend 4.3.0"
-    validations:
-      required: true
-  - type: textarea
-    id: what
-    attributes:
-      label: Que s'est-il passé ?
-      description: Ce que vous attendiez et ce qui s'est produit.
+      description: cospend-ha, Home Assistant, Nextcloud, Cospend
+      placeholder: "cospend-ha 1.0.0, HA 2026.11, Nextcloud 33, Cospend 3.x"
     validations:
       required: true
   - type: textarea
     id: logs
     attributes:
-      label: Journaux
-      description: Extrait des journaux de Home Assistant. Retirez toute donnée personnelle.
+      label: Logs / Journaux
+      description: Home Assistant log lines mentioning `cospend`, and browser console errors for card problems. Remove tokens, passwords and private addresses. / Retirez jetons, mots de passe et adresses privées.
       render: text
