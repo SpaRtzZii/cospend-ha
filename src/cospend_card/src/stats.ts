@@ -36,6 +36,7 @@ const NO_CATEGORY = 0;
 class CospendStats extends LitElement {
   static properties = {
     hass: { attribute: false },
+    embedded: { type: Boolean },
     project: { attribute: false },
     _stats: { state: true },
     _loading: { state: true },
@@ -53,6 +54,7 @@ class CospendStats extends LitElement {
   };
 
   declare hass?: HassLike;
+  declare embedded: boolean;
   declare project?: Project;
   declare _stats: Statistics | null;
   declare _loading: boolean;
@@ -72,6 +74,7 @@ class CospendStats extends LitElement {
 
   constructor() {
     super();
+    this.embedded = false;
     this._stats = null;
     this._loading = false;
     this._error = "";
@@ -195,13 +198,15 @@ class CospendStats extends LitElement {
     return html`
       <div class="wrap">
         <div class="top">
-          <button
-            class="icon back"
-            aria-label=${this._t("back")}
-            @click=${this._close}
-          >
-            <ha-icon icon="mdi:arrow-left"></ha-icon>
-          </button>
+          ${this.embedded
+            ? nothing
+            : html`<button
+                class="icon back"
+                aria-label=${this._t("back")}
+                @click=${this._close}
+              >
+                <ha-icon icon="mdi:arrow-left"></ha-icon>
+              </button>`}
           <h2>${this._t("stats_title")}</h2>
           <button
             class="icon toggle ${this._hasFilters() ? "active" : ""}"

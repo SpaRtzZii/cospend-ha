@@ -108,6 +108,8 @@ export interface CospendCardConfig {
   show_settlement?: boolean;
   /** Bouton « Statistiques » (tableau, graphiques, Sankey) ; vrai par défaut. */
   show_stats?: boolean;
+  /** Disposition en deux colonnes quand la carte est large (panneau) ; vrai par défaut. */
+  wide_layout?: boolean;
   /** Soldes affichés sur la carte, au-dessus des dépenses ; sinon dans un écran à part (faux par défaut). */
   inline_balances?: boolean;
 }
@@ -225,3 +227,21 @@ export interface CospendChartCardConfig {
   /** Total et nombre de dépenses sous le titre ; vrai par défaut. */
   show_total?: boolean;
 }
+
+/** Configuration de la carte ``custom:cospend-actions-card`` (ajouter, modifier, supprimer). */
+export interface CospendActionsCardConfig {
+  type: string;
+  title?: string;
+  project?: string;
+  entry_id?: string;
+  /** Bouton « Ajouter » ; vrai par défaut. */
+  show_add?: boolean;
+  /** Bouton « Modifier » ; vrai par défaut. */
+  show_edit?: boolean;
+  /** Bouton « Supprimer » ; vrai par défaut. */
+  show_delete?: boolean;
+  /** Faux : carte en lecture seule, comme la carte principale. */
+  allow_write?: boolean;
+}
+
+export type ActionMode = "add" | "edit" | "delete";

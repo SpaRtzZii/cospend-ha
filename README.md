@@ -49,9 +49,18 @@ show_search: true          # search field
 allow_write: true          # add / delete expenses from the card
 show_settlement: true      # "Settle up" button: who owes whom, with one-tap reimbursement
 show_stats: true           # "Statistics" button: table, charts and flow diagram, with filters
+wide_layout: true          # two columns when the card is wide (panel view), see below
 allow_manage: false        # project settings (gear): true = every user, false = Home Assistant administrators only
 page_size: 20              # expenses loaded at a time
 ```
+
+### Wide layout (panel view)
+
+When the card is at least about 900 px wide (for example a dashboard in *panel* mode), it
+switches by itself to two columns: member balances and reimbursements on the left with the
+statistics below them, and on the right the expense list with search, add, edit and delete. In a
+one-column section or on a phone nothing changes. `wide_layout: false` keeps the single column.
+The project settings (gear) still open over the whole card.
 
 ### Chart card
 
@@ -74,6 +83,25 @@ show_total: true           # total and number of expenses under the title
 `members` compares what each member paid with their share, `flows` is the payer → category →
 beneficiary diagram and `balances` shows the member balances. The figures are computed by Home
 Assistant on the synchronised expenses, and the card refreshes itself when they change.
+
+### Actions card
+
+`custom:cospend-actions-card` is a small card with **three buttons**: Add, Edit and Delete an
+expense (visual editor included). Each button opens a pop-up; Edit and Delete first ask which
+expense, in a drop-down list (with a search box). Deleting asks for a confirmation.
+
+```yaml
+type: custom:cospend-actions-card
+project: my-project        # optional: without it, the first active project
+title: Expenses            # optional: defaults to the project name
+show_add: true
+show_edit: true
+show_delete: true
+allow_write: true          # false = buttons disabled (read only)
+```
+
+The buttons are disabled when the Nextcloud account cannot write to the project. Offline, the
+operation is queued like on the main card.
 
 The card follows your Home Assistant theme (light, dark, custom themes) and language (English and
 French). It shows the expense list (custom splits are shown as one expense), a search

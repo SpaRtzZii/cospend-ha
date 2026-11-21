@@ -642,3 +642,89 @@ describe("éditeur", () => {
     expect(options.map((option: { value: string }) => option.value)).toEqual(["", "voyage"]);
   });
 });
+
+describe("disposition large", () => {
+  let resize: (width: number) => void = () => {};
+  beforeEach(() => {
+    document.body.innerHTML = "";
+    const callbacks: Array<(entries: unknown[]) => void> = [];
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        constructor(cb: (entries: unknown[]) => void) {
+          callbacks.push(cb);
+        }
+        observe() {}
+        disconnect() {}
+      },
+    );
+    resize = (width) => callbacks.forEach((cb) => cb([{ contentRect: { width } }]));
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  const has = (card: Card, selector: string) => card.shadowRoot!.querySelector(selector) !== null;
+
+  it("reste en une colonne quand la carte est étroite", async () => {
+    const card = await mount(makeHass([project()], [bill(1, "Pain")]).hass);
+    resize(500);
+    await settle(card);
+    expect(has(card, ".wide")).toBe(false);
+    expect(has(card, "button.stats")).toBe(true);
+    expect(has(card, "button.settle")).toBe(true);
+  });
+
+  it("passe en deux colonnes : soldes, remboursements et statistiques à gauche, dépenses à droite", async () => {
+    const card = await mount(makeHass([project()], [bill(1, "Pain")]).hass);
+    resize(1400);
+    await settle(card);
+    const side = card.shadowRoot!.querySelector(".wide.two .col-left")!;
+    expect(side.querySelector("cospend-balances")).not.toBeNull();
+    expect(side.querySelector("cospend-settlement")).not.toBeNull();
+    expect(side.querySelector("cospend-stats")).not.toBeNull();
+    expect(card.shadowRoot!.querySelector(".wide .col-right")!.textContent).toContain("Pain");
+    // Les boutons d'écrans à part n'ont plus de raison d'être.
+    expect(has(card, "button.stats")).toBe(false);
+    expect(has(card, "button.settle")).toBe(false);
+    expect(has(card, "button.balances")).toBe(false);
+  });
+
+  it("revient à une colonne quand la carte rétrécit", async () => {
+    const card = await mount(makeHass([project()], [bill(1, "Pain")]).hass);
+    resize(1400);
+    await settle(card);
+    resize(600);
+    await settle(card);
+    expect(has(card, ".wide")).toBe(false);
+  });
+
+  it("wide_layout: false garde une colonne", async () => {
+    const card = await mount(makeHass([project()], [bill(1, "Pain")]).hass, { wide_layout: false });
+    resize(1400);
+    await settle(card);
+    expect(has(card, ".wide")).toBe(false);
+  });
+
+  it("respecte show_stats et show_settlement", async () => {
+    const card = await mount(makeHass([project()], [bill(1, "Pain")]).hass, {
+      show_stats: false,
+      show_settlement: false,
+    });
+    resize(1400);
+    await settle(card);
+    expect(has(card, "cospend-stats")).toBe(false);
+    expect(has(card, "cospend-settlement")).toBe(false);
+    expect(has(card, "cospend-balances")).toBe(true);
+  });
+
+  it("ouvre le formulaire d'ajout dans la colonne de droite", async () => {
+    const card = await mount(makeHass([project()], [bill(1, "Pain")]).hass);
+    resize(1400);
+    await settle(card);
+    (card.shadowRoot!.querySelector(".wide .col-right button.add") as HTMLElement).click();
+    await settle(card);
+    expect(card.shadowRoot!.querySelector(".wide .col-right cospend-bill-form")).not.toBeNull();
+    expect(has(card, ".wide .col-left cospend-stats")).toBe(true);
+  });
+});
