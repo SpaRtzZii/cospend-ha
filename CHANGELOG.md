@@ -4,6 +4,10 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 
 ## [Non publié]
 
+### Modifié
+
+- Carte : le QR code de partage encode désormais `cospend://hôte/<token>/no-pass` (import direct dans Cowspent), avec bascule vers le lien de la page web.
+
 ### Ajouté (jalons M8c et M8d : mode tablette, partage)
 - Carte principale : entre 640 et 900 px de large, deux colonnes réduites (soldes et remboursements à gauche, dépenses à droite) ; les statistiques restent derrière le bouton de l'en-tête. Les lignes de remboursement passent à la ligne dans les colonnes étroites.
 - Carte principale : option `share_url` (lien de partage public du projet, champ de l'éditeur visuel) ; un bouton « Partager » ouvre une fenêtre avec le QR code, le lien, un bouton Copier et un lien vers la page web. Le QR code est généré avec `qrcode-generator` (MIT).

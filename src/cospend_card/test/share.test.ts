@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
 import "../src/share-dialog";
-import { qrMatrix, safeShareUrl } from "../src/qr";
+import { cospendAppLink, qrMatrix, safeShareUrl } from "../src/qr";
 import type { HassLike } from "../src/types";
 
 const URL = "https://cloud.example.org/apps/cospend/s/AbCdEf0123456789";
@@ -15,6 +15,25 @@ describe("safeShareUrl", () => {
     for (const bad of ["", "   ", "javascript:alert(1)", "data:text/html,x", "cospend://x", "pas une adresse", 42, null, undefined]) {
       expect(safeShareUrl(bad)).toBeNull();
     }
+  });
+});
+
+describe("cospendAppLink", () => {
+  it("construit le lien d'import des applications mobiles", () => {
+    expect(cospendAppLink(URL)).toBe("cospend://cloud.example.org/AbCdEf0123456789/no-pass");
+    expect(cospendAppLink("https://cloud.example.org/index.php/apps/cospend/s/Tok/")).toBe(
+      "cospend://cloud.example.org/Tok/no-pass",
+    );
+    expect(cospendAppLink("https://example.org:8443/nextcloud/apps/cospend/s/Tok")).toBe(
+      "cospend://example.org:8443/nextcloud/Tok/no-pass",
+    );
+  });
+
+  it("refuse ce qui n'est pas un lien de partage Cospend en https", () => {
+    expect(cospendAppLink("http://cloud.example.org/apps/cospend/s/Tok")).toBeNull();
+    expect(cospendAppLink("https://cloud.example.org/apps/cospend/p/teste")).toBeNull();
+    expect(cospendAppLink("https://cloud.example.org/")).toBeNull();
+    expect(cospendAppLink("n'importe quoi")).toBeNull();
   });
 });
 
@@ -62,16 +81,39 @@ describe("cospend-share-dialog", () => {
     document.body.innerHTML = "";
   });
 
-  it("affiche le QR code, le lien et un lien d'ouverture sûr", async () => {
+  it("affiche par défaut le lien de l'application, le lien web et un lien d'ouverture sûr", async () => {
     const dialog = await open(URL);
     const root = dialog.shadowRoot!;
     expect(root.querySelector("svg.qr path")).not.toBeNull();
-    expect((root.querySelector("input.link") as HTMLInputElement).value).toBe(URL);
+    expect((root.querySelector("input.link") as HTMLInputElement).value).toBe(
+      "cospend://cloud.example.org/AbCdEf0123456789/no-pass",
+    );
     const link = root.querySelector("a.open") as HTMLAnchorElement;
     expect(link.getAttribute("href")).toBe(URL);
     expect(link.rel).toContain("noopener");
     expect(root.textContent).toContain("Cowspent");
+    expect(root.querySelectorAll("button.mode")).toHaveLength(2);
     expect(root.textContent).toContain("Voyage");
+  });
+
+  it("bascule sur le lien de la page web", async () => {
+    const dialog = await open(URL);
+    const root = dialog.shadowRoot!;
+    const before = root.querySelector("svg.qr path")!.getAttribute("d");
+    (root.querySelectorAll("button.mode")[1] as HTMLElement).click();
+    await dialog.updateComplete;
+    expect((root.querySelector("input.link") as HTMLInputElement).value).toBe(URL);
+    expect(root.querySelector("svg.qr path")!.getAttribute("d")).not.toBe(before);
+    expect(root.textContent).toContain("appareil photo");
+  });
+
+  it("sans lien d'application possible (http), seul le lien web est proposé", async () => {
+    const dialog = await open("http://192.168.1.20:8080/apps/cospend/s/Tok");
+    const root = dialog.shadowRoot!;
+    expect(root.querySelectorAll("button.mode")).toHaveLength(0);
+    expect((root.querySelector("input.link") as HTMLInputElement).value).toBe(
+      "http://192.168.1.20:8080/apps/cospend/s/Tok",
+    );
   });
 
   it("refuse un lien qui n'est pas une adresse web", async () => {
@@ -92,7 +134,7 @@ describe("cospend-share-dialog", () => {
     (dialog.shadowRoot!.querySelector("button.copy") as HTMLElement).click();
     await new Promise((resolve) => setTimeout(resolve, 0));
     await dialog.updateComplete;
-    expect(copied).toBe(URL);
+    expect(copied).toBe("cospend://cloud.example.org/AbCdEf0123456789/no-pass");
     expect(dialog.shadowRoot!.querySelector("button.copy")!.textContent).toContain("Copié");
   });
 

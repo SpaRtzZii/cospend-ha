@@ -2,7 +2,7 @@ import { LitElement, css, html, nothing, svg } from "lit";
 import type { TemplateResult } from "lit";
 
 import { translate } from "./i18n";
-import { qrMatrix, safeShareUrl } from "./qr";
+import { cospendAppLink, qrMatrix, safeShareUrl } from "./qr";
 import type { HassLike } from "./types";
 
 /**
@@ -17,12 +17,14 @@ class CospendShareDialog extends LitElement {
     url: { attribute: false },
     name: { attribute: false },
     _copied: { state: true },
+    _mode: { state: true },
   };
 
   declare hass?: HassLike;
   declare url: string;
   declare name: string;
   declare _copied: boolean;
+  declare _mode: "app" | "web";
 
   private _opener: Element | null = null;
   private _timer?: ReturnType<typeof setTimeout>;
@@ -32,6 +34,7 @@ class CospendShareDialog extends LitElement {
     this.url = "";
     this.name = "";
     this._copied = false;
+    this._mode = "app";
   }
 
   connectedCallback(): void {
@@ -63,10 +66,16 @@ class CospendShareDialog extends LitElement {
     this.dispatchEvent(new CustomEvent("closed"));
   }
 
+  /** Lien encodé dans le QR code : celui de l'application si disponible et choisi, sinon la page web. */
+  private _target(web: string): { value: string; app: boolean } {
+    const app = cospendAppLink(web);
+    return app && this._mode === "app" ? { value: app, app: true } : { value: web, app: false };
+  }
+
   private async _copy(): Promise<void> {
     let ok = false;
     try {
-      await navigator.clipboard.writeText(this.url);
+      await navigator.clipboard.writeText(this._target(safeShareUrl(this.url) ?? "").value);
       ok = true;
     } catch {
       // Contexte non sécurisé ou refus : on retombe sur la sélection du champ.
@@ -101,6 +110,40 @@ class CospendShareDialog extends LitElement {
     </svg>`;
   }
 
+  private _modes(url: string): TemplateResult | typeof nothing {
+    if (!cospendAppLink(url)) return nothing;
+    return html`<div class="modes" role="group">
+      ${(["app", "web"] as const).map(
+        (mode) => html`<button
+          class="mode ${this._mode === mode ? "on" : ""}"
+          aria-pressed=${this._mode === mode ? "true" : "false"}
+          @click=${() => (this._mode = mode)}
+        >
+          ${this._t(`share_mode_${mode}`)}
+        </button>`,
+      )}
+    </div>`;
+  }
+
+  private _body(url: string): TemplateResult {
+    const target = this._target(url);
+    return html`
+      ${this.name ? html`<p class="name">${this.name}</p>` : nothing} ${this._modes(url)}
+      <div class="qr-wrap">${this._qr(target.value)}</div>
+      <p class="hint">${this._t(target.app ? "share_hint_app" : "share_hint_web")}</p>
+      <div class="link-row">
+        <input class="link" type="text" readonly .value=${target.value} aria-label=${this._t("share_link")} />
+        <button class="copy" @click=${() => void this._copy()}>
+          <ha-icon icon=${this._copied ? "mdi:check" : "mdi:content-copy"}></ha-icon>
+          <span role="status">${this._copied ? this._t("share_copied") : this._t("share_copy")}</span>
+        </button>
+      </div>
+      <a class="open" href=${url} target="_blank" rel="noopener noreferrer">
+        <ha-icon icon="mdi:open-in-new"></ha-icon> ${this._t("share_open")}
+      </a>
+    `;
+  }
+
   protected render(): TemplateResult {
     const url = safeShareUrl(this.url);
     return html`
@@ -122,21 +165,7 @@ class CospendShareDialog extends LitElement {
             </button>
           </div>
           ${url
-            ? html`
-                ${this.name ? html`<p class="name">${this.name}</p>` : nothing}
-                <div class="qr-wrap">${this._qr(url)}</div>
-                <p class="hint">${this._t("share_hint")}</p>
-                <div class="link-row">
-                  <input class="link" type="text" readonly .value=${url} aria-label=${this._t("share_link")} />
-                  <button class="copy" @click=${() => void this._copy()}>
-                    <ha-icon icon=${this._copied ? "mdi:check" : "mdi:content-copy"}></ha-icon>
-                    <span role="status">${this._copied ? this._t("share_copied") : this._t("share_copy")}</span>
-                  </button>
-                </div>
-                <a class="open" href=${url} target="_blank" rel="noopener noreferrer">
-                  <ha-icon icon="mdi:open-in-new"></ha-icon> ${this._t("share_open")}
-                </a>
-              `
+            ? this._body(url)
             : html`<p class="error" role="alert">${this._t("share_invalid")}</p>`}
         </div>
       </div>
@@ -206,6 +235,32 @@ class CospendShareDialog extends LitElement {
       height: auto;
       border-radius: 8px;
       background: #ffffff;
+    }
+    .modes {
+      display: flex;
+      gap: 4px;
+      margin: 0 0 4px;
+      padding: 3px;
+      border-radius: 20px;
+      background: var(--secondary-background-color);
+    }
+    .mode {
+      flex: 1;
+      padding: 6px 10px;
+      font: inherit;
+      color: var(--secondary-text-color);
+      background: none;
+      border: none;
+      border-radius: 17px;
+      cursor: pointer;
+    }
+    .mode.on {
+      color: var(--text-primary-color, #fff);
+      background: var(--primary-color);
+    }
+    .mode:focus-visible {
+      outline: 2px solid var(--primary-color);
+      outline-offset: 2px;
     }
     .hint {
       margin: 8px 0 12px;
