@@ -707,6 +707,34 @@ describe("disposition large", () => {
     expect(has(card, "button.balances")).toBe(false);
   });
 
+  it("tablette : soldes et remboursements à gauche, dépenses à droite, statistiques à part", async () => {
+    const card = await mount(makeHass([project()], [bill(1, "Pain")]).hass);
+    resize(750);
+    await settle(card);
+    const left = card.shadowRoot!.querySelector(".wide.two.medium .col-left")!;
+    expect(left.querySelector("cospend-balances")).not.toBeNull();
+    expect(left.querySelector("cospend-settlement")).not.toBeNull();
+    expect(has(card, "cospend-stats")).toBe(false);
+    expect(card.shadowRoot!.querySelector(".wide .col-right")!.textContent).toContain("Pain");
+    expect(has(card, "button.settle")).toBe(false);
+    expect(has(card, "button.balances")).toBe(false);
+    // Les statistiques s'ouvrent depuis le bouton de l'en-tête, comme en une colonne.
+    (card.shadowRoot!.querySelector("button.stats") as HTMLElement).click();
+    await settle(card);
+    expect(has(card, "cospend-stats")).toBe(true);
+    expect(has(card, ".wide")).toBe(false);
+    card.shadowRoot!.querySelector("cospend-stats")!.dispatchEvent(new CustomEvent("close"));
+    await settle(card);
+    expect(has(card, ".wide.medium")).toBe(true);
+  });
+
+  it("wide_layout: false garde aussi une colonne sur tablette", async () => {
+    const card = await mount(makeHass([project()], [bill(1, "Pain")]).hass, { wide_layout: false });
+    resize(750);
+    await settle(card);
+    expect(has(card, ".wide")).toBe(false);
+  });
+
   it("revient à une colonne quand la carte rétrécit", async () => {
     const card = await mount(makeHass([project()], [bill(1, "Pain")]).hass);
     resize(1400);
@@ -743,5 +771,53 @@ describe("disposition large", () => {
     await settle(card);
     expect(card.shadowRoot!.querySelector(".wide .col-right cospend-bill-form")).not.toBeNull();
     expect(has(card, ".wide .col-left cospend-stats")).toBe(true);
+  });
+});
+
+
+describe("partage", () => {
+  const SHARE = "https://cloud.example.org/apps/cospend/s/AbCdEf0123456789";
+  beforeEach(() => {
+    document.body.innerHTML = "";
+  });
+  const btn = (card: Card) => card.shadowRoot!.querySelector("button.share") as HTMLElement | null;
+  const dialog = () => document.body.querySelector("cospend-share-dialog");
+
+  it("n'affiche pas le bouton sans lien ou avec un lien invalide", async () => {
+    const { hass } = makeHass([project()], []);
+    expect(btn(await mount(hass))).toBeNull();
+    document.body.innerHTML = "";
+    expect(btn(await mount(hass, { share_url: "javascript:alert(1)" }))).toBeNull();
+  });
+
+  it("ouvre la fenêtre de partage avec le lien", async () => {
+    const { hass } = makeHass([project()], []);
+    const card = await mount(hass, { share_url: SHARE });
+    btn(card)!.click();
+    expect(dialog()).not.toBeNull();
+    expect((dialog() as unknown as { url: string }).url).toBe(SHARE);
+    dialog()!.dispatchEvent(new CustomEvent("closed"));
+    expect(dialog()).toBeNull();
+  });
+
+  it("le lien ne s'applique qu'au projet configuré", async () => {
+    const other = project({ id: "maison", name: "Maison" });
+    const { hass } = makeHass([project(), other], []);
+    const card = await mount(hass, { share_url: SHARE, project: "maison" });
+    expect(btn(card)).not.toBeNull();
+    (card.shadowRoot!.querySelector(".project-select") as HTMLSelectElement).value = "e1:voyage";
+    card.shadowRoot!.querySelector(".project-select")!.dispatchEvent(new Event("change"));
+    await settle(card);
+    expect(btn(card)).toBeNull();
+    // Sans projet configuré et avec plusieurs projets, le lien est ambigu : pas de bouton.
+    document.body.innerHTML = "";
+    expect(btn(await mount(hass, { share_url: SHARE }))).toBeNull();
+  });
+
+  it("retire la fenêtre quand la carte quitte la page", async () => {
+    const card = await mount(makeHass([project()], []).hass, { share_url: SHARE });
+    btn(card)!.click();
+    card.remove();
+    expect(dialog()).toBeNull();
   });
 });

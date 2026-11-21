@@ -4,6 +4,10 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 
 ## [Non publié]
 
+### Ajouté (jalons M8c et M8d : mode tablette, partage)
+- Carte principale : entre 640 et 900 px de large, deux colonnes réduites (soldes et remboursements à gauche, dépenses à droite) ; les statistiques restent derrière le bouton de l'en-tête. Les lignes de remboursement passent à la ligne dans les colonnes étroites.
+- Carte principale : option `share_url` (lien de partage public du projet, champ de l'éditeur visuel) ; un bouton « Partager » ouvre une fenêtre avec le QR code, le lien, un bouton Copier et un lien vers la page web. Le QR code est généré avec `qrcode-generator` (MIT).
+
 ### Ajouté (jalon M8b : barrière administrateur, captures d'écran)
 - Option de l'intégration « Réserver la gestion du projet aux administrateurs » : les services de gestion (membres, catégories, modes de paiement, devises) refusent alors les utilisateurs qui ne sont pas administrateurs de Home Assistant ; les automatisations ne sont pas concernées. Désactivée par défaut.
 - README : captures d'écran (vue panneau claire et sombre, statistiques, mobile, cartes indépendantes, fenêtre de modification) et état du projet à jour.

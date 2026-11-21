@@ -36,6 +36,8 @@ import "./settlement";
 import "./stats";
 import "./cospend-card-editor";
 import "./actions-card";
+import "./share-dialog";
+import { safeShareUrl } from "./qr";
 import "./chart-card";
 
 const DEFAULT_PAGE_SIZE = 20;
@@ -43,6 +45,10 @@ const SEARCH_DELAY_MS = 300;
 const REFRESH_DELAY_MS = 500;
 /** Largeur de la carte (px) à partir de laquelle la disposition en deux colonnes s'applique. */
 const WIDE_MIN_WIDTH = 900;
+/** Largeur à partir de laquelle la carte passe en deux colonnes réduites (tablette). */
+const MEDIUM_MIN_WIDTH = 640;
+
+type Layout = "narrow" | "medium" | "wide";
 
 class CospendCard extends LitElement {
   static properties = {
@@ -66,7 +72,7 @@ class CospendCard extends LitElement {
     _confirming: { state: true },
     _busy: { state: true },
     _notice: { state: true },
-    _wide: { state: true },
+    _layout: { state: true },
   };
 
   declare hass?: HassLike;
@@ -89,7 +95,7 @@ class CospendCard extends LitElement {
   declare _confirming: boolean;
   declare _busy: boolean;
   declare _notice: { kind: "ok" | "error"; text: string } | null;
-  declare _wide: boolean;
+  declare _layout: Layout;
 
   private _unsubscribe?: () => void;
   private _subscribing = false;
@@ -99,6 +105,7 @@ class CospendCard extends LitElement {
   private _noticeTimer?: ReturnType<typeof setTimeout>;
   private _requestId = 0;
   private _resizer?: ResizeObserver;
+  private _shareDialog?: HTMLElement;
 
   constructor() {
     super();
@@ -120,7 +127,7 @@ class CospendCard extends LitElement {
     this._confirming = false;
     this._busy = false;
     this._notice = null;
-    this._wide = false;
+    this._layout = "narrow";
   }
 
   static getConfigElement(): HTMLElement {
@@ -154,7 +161,8 @@ class CospendCard extends LitElement {
     if (typeof ResizeObserver !== "undefined") {
       this._resizer = new ResizeObserver((entries) => {
         const width = entries[0]?.contentRect.width ?? 0;
-        this._wide = width >= WIDE_MIN_WIDTH;
+        this._layout =
+          width >= WIDE_MIN_WIDTH ? "wide" : width >= MEDIUM_MIN_WIDTH ? "medium" : "narrow";
       });
       this._resizer.observe(this);
     }
@@ -163,6 +171,7 @@ class CospendCard extends LitElement {
 
   disconnectedCallback(): void {
     super.disconnectedCallback();
+    this._closeShare();
     this._resizer?.disconnect();
     this._resizer = undefined;
     this._unsubscribe?.();
@@ -421,7 +430,9 @@ class CospendCard extends LitElement {
     const project = this._project;
     const wide = this._isWide;
     const body = wide && !this._manage
-      ? this._renderWide(project)
+      ? this._renderWide(project, false)
+      : this._isMedium && !this._manage && !this._stats
+      ? this._renderWide(project, true)
       : this._balances
       ? html`<cospend-balances
           .hass=${this.hass}
@@ -480,8 +491,44 @@ class CospendCard extends LitElement {
     return this._shell(title ?? project.name, body, project);
   }
 
+  /** Lien de partage du projet affiché : celui de la configuration, s'il vise bien ce projet. */
+  private get _shareUrl(): string | null {
+    const url = safeShareUrl(this._config?.share_url);
+    const project = this._project;
+    if (!url || !project) return null;
+    const wanted = this._config?.project;
+    if (wanted) return project.id === wanted ? url : null;
+    return (this._projects?.length ?? 0) === 1 ? url : null;
+  }
+
+  private _openShare(): void {
+    const url = this._shareUrl;
+    if (!url || this._shareDialog) return;
+    const dialog = document.createElement("cospend-share-dialog") as HTMLElement & {
+      hass?: HassLike;
+      url: string;
+      name: string;
+    };
+    dialog.hass = this.hass;
+    dialog.url = url;
+    dialog.name = this._project?.name ?? "";
+    dialog.addEventListener("closed", () => this._closeShare());
+    this._shareDialog = dialog;
+    document.body.append(dialog);
+  }
+
+  private _closeShare(): void {
+    this._shareDialog?.remove();
+    this._shareDialog = undefined;
+  }
+
   private get _isWide(): boolean {
-    return this._wide && this._config?.wide_layout !== false;
+    return this._layout === "wide" && this._config?.wide_layout !== false;
+  }
+
+  /** Tablette : deux colonnes réduites (soldes et remboursements / dépenses), statistiques à part. */
+  private get _isMedium(): boolean {
+    return this._layout === "medium" && this._config?.wide_layout !== false;
   }
 
   /** Colonne de droite (ou carte entière en une colonne) : formulaire, détail ou liste. */
@@ -508,15 +555,15 @@ class CospendCard extends LitElement {
   }
 
   /** Disposition large : soldes et remboursements, puis statistiques, à gauche ; dépenses à droite. */
-  private _renderWide(project: Project): TemplateResult {
+  private _renderWide(project: Project, compact: boolean): TemplateResult {
     const config = this._config;
     const showBalances = config?.show_balances !== false;
     const showSettle = config?.show_settlement !== false;
-    const showStats = config?.show_stats !== false;
+    const showStats = !compact && config?.show_stats !== false;
     const showBills = config?.show_bills !== false;
     const hasLeft = showBalances || showSettle || showStats;
     return html`
-      <div class="wide ${hasLeft && showBills ? "two" : ""}">
+      <div class="wide ${hasLeft && showBills ? "two" : ""} ${compact ? "medium" : ""}">
         ${hasLeft
           ? html`<div class="col-left">
               ${showBalances || showSettle
@@ -555,7 +602,9 @@ class CospendCard extends LitElement {
   private _shell(title: string | undefined, body: unknown, project?: Project): TemplateResult {
     const projects = this._projects ?? [];
     const screen =
-      this._manage || (!this._isWide && (this._form || this._settle || this._stats || this._balances));
+      this._manage ||
+      (!this._isWide && !this._isMedium && (this._form || this._settle || this._balances)) ||
+      (!this._isWide && this._stats);
     const chooser = this._projectSelect && projects.length > 0 && project !== undefined && !screen;
     return html`
       <ha-card>
@@ -573,7 +622,7 @@ class CospendCard extends LitElement {
                 ${this._t("pending_count", { count: project.pending })}
               </span>`
             : nothing}
-          ${project && this._config?.show_balances !== false && this._config?.inline_balances !== true && !this._isWide && !this._form && !this._manage && !this._settle && !this._stats && !this._balances
+          ${project && this._config?.show_balances !== false && this._config?.inline_balances !== true && !this._isWide && !this._isMedium && !this._form && !this._manage && !this._settle && !this._stats && !this._balances
             ? html`<button
                 class="gear balances"
                 aria-label=${this._t("balances")}
@@ -599,7 +648,7 @@ class CospendCard extends LitElement {
                 <ha-icon icon="mdi:chart-box-outline"></ha-icon>
               </button>`
             : nothing}
-          ${project && this._config?.show_settlement !== false && !this._isWide && !this._form && !this._manage && !this._settle && !this._stats && !this._balances
+          ${project && this._config?.show_settlement !== false && !this._isWide && !this._isMedium && !this._form && !this._manage && !this._settle && !this._stats && !this._balances
             ? html`<button
                 class="gear settle"
                 aria-label=${this._t("settlement")}
@@ -610,6 +659,16 @@ class CospendCard extends LitElement {
                 }}
               >
                 <ha-icon icon="mdi:swap-horizontal"></ha-icon>
+              </button>`
+            : nothing}
+          ${project && this._shareUrl && !this._form && !this._manage && !this._settle && !this._stats && !this._balances
+            ? html`<button
+                class="gear share"
+                aria-label=${this._t("share")}
+                title=${this._t("share")}
+                @click=${() => this._openShare()}
+              >
+                <ha-icon icon="mdi:qrcode"></ha-icon>
               </button>`
             : nothing}
           ${project && this._canManage(project) && !this._form && !this._manage && !this._settle && !this._stats && !this._balances
@@ -884,6 +943,11 @@ class CospendCard extends LitElement {
       grid-template-columns: minmax(380px, 5fr) minmax(0, 7fr);
       gap: 16px;
       align-items: start;
+    }
+    .wide.two.medium {
+      grid-template-columns: minmax(300px, 2fr) minmax(0, 3fr);
+      gap: 12px;
+      padding: 8px 12px;
     }
     .wide .col-left,
     .wide .col-right {

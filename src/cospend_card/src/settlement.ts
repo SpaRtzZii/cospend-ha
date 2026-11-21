@@ -243,11 +243,15 @@ class CospendSettlement extends LitElement {
     }
     .line {
       display: flex;
+      flex-wrap: wrap;
       align-items: center;
       gap: 8px;
     }
+    .line .reimburse {
+      margin-left: auto;
+    }
     .grow {
-      flex: 1;
+      flex: 1 1 140px;
       min-width: 0;
     }
     .text {
