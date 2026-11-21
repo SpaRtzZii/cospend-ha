@@ -74,12 +74,31 @@ allow_manage: false        # project settings (gear): true = every user, false =
 page_size: 20              # expenses loaded at a time
 ```
 
+### Sharing with a QR code
+
+In Cospend, create a **public share link** for the project (the project's share menu). Paste it in
+the card editor (*Public share link*), or in YAML:
+
+```yaml
+type: custom:cospend-card
+project: my-project
+share_url: https://cloud.example.org/apps/cospend/s/<token>
+```
+
+A **Share** button (QR icon) then opens a window with the QR code, the link, a *Copy* button and
+a link to the web page. Scan the code with Cowspent, or with the phone camera to open the web
+page. The link gives access to the project to anyone who has it, and a dashboard configuration can
+be read by every Home Assistant user who sees the dashboard: only paste a link you are happy to
+share, and delete it from Cospend to revoke it. The button only shows for the project named in
+`project`.
+
 ### Wide layout (panel view)
 
 When the card is at least about 900 px wide (for example a dashboard in *panel* mode), it
 switches by itself to two columns: member balances and reimbursements on the left with the
-statistics below them, and on the right the expense list with search, add, edit and delete. In a
-one-column section or on a phone nothing changes. `wide_layout: false` keeps the single column.
+statistics below them, and on the right the expense list with search, add, edit and delete. On a
+tablet-sized card (about 640 to 900 px) the two columns are narrower and the statistics stay behind
+the header button. In a one-column section or on a phone nothing changes. `wide_layout: false` keeps the single column.
 The project settings (gear) still open over the whole card.
 
 ### Chart card

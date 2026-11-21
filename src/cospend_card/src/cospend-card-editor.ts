@@ -57,6 +57,7 @@ class CospendCardEditor extends LitElement {
     return [
       { name: "title", selector: { text: {} } },
       { name: "project", selector: { select: { mode: "dropdown", options } } },
+      { name: "share_url", selector: { text: {} } },
       { name: "show_balances", selector: { boolean: {} } },
       { name: "inline_balances", selector: { boolean: {} } },
       { name: "show_bills", selector: { boolean: {} } },
@@ -76,6 +77,7 @@ class CospendCardEditor extends LitElement {
     return {
       title: config?.title ?? "",
       project: config?.project ?? "",
+      share_url: config?.share_url ?? "",
       show_balances: config?.show_balances ?? true,
       inline_balances: config?.inline_balances ?? false,
       show_bills: config?.show_bills ?? true,
@@ -94,7 +96,7 @@ class CospendCardEditor extends LitElement {
     event.stopPropagation();
     const value = event.detail.value;
     const config: CospendCardConfig = { ...(this._config as CospendCardConfig) };
-    for (const key of ["title", "project"] as const) {
+    for (const key of ["title", "project", "share_url"] as const) {
       const text = value[key];
       if (typeof text === "string" && text !== "") config[key] = text;
       else delete config[key];

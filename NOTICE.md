@@ -10,5 +10,7 @@ l'application Android **Cowspent**. Il s'appuie sur le travail de :
 - **MoneyBuster**, **PhoneTrack** et **Nextcloud Notes** (Android), dont Cowspent est issu.
 - **Nextcloud Cospend** — https://github.com/julien-nc/cospend-nc — AGPL-3.0, serveur et API
   utilisés par ce projet.
+- **qrcode-generator** (Kazuhiko Arase) — https://github.com/kazuhikoarase/qrcode-generator — MIT,
+  générateur de QR codes embarqué dans la carte.
 
 Ce projet n'est affilié ni à Nextcloud GmbH, ni aux auteurs de Cospend ou de Cowspent.
