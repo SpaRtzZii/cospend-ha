@@ -13,6 +13,24 @@ export function safeShareUrl(value: unknown): string | null {
   }
 }
 
+/**
+ * Lien d'import des applications mobiles (Cowspent, MoneyBuster) pour un lien de partage public :
+ * ``cospend://<serveur>[/sous-dossier]/<jeton>/no-pass``, le format du QR code de Cospend.
+ * Renvoie ``null`` si le lien n'est pas un lien de partage Cospend en https.
+ */
+export function cospendAppLink(shareUrl: string): string | null {
+  let url: URL;
+  try {
+    url = new URL(shareUrl);
+  } catch {
+    return null;
+  }
+  if (url.protocol !== "https:") return null;
+  const match = url.pathname.match(/^(.*?)(?:\/index\.php)?\/apps\/cospend\/s\/([^/]+)\/?$/);
+  if (!match) return null;
+  return `cospend://${url.host}${match[1].replace(/\/+$/, "")}/${match[2]}/no-pass`;
+}
+
 export interface QrMatrix {
   /** Nombre de modules par côté (zone de silence comprise). */
   size: number;

@@ -86,8 +86,14 @@ share_url: https://cloud.example.org/apps/cospend/s/<token>
 ```
 
 A **Share** button (QR icon) then opens a window with the QR code, the link, a *Copy* button and
-a link to the web page. Scan the code with Cowspent, or with the phone camera to open the web
-page. The link gives access to the project to anyone who has it, and a dashboard configuration can
+a link to the web page. Two modes, switchable in the window:
+
+- **Application** (default): the code holds `cospend://<host>/<token>/no-pass`, the same format as
+  Cospend's own QR code. Scan it from Cowspent (or another Cospend mobile app) to import the
+  project with no typing. This mode needs an `https` link in the usual Cospend form.
+- **Web page**: the code holds the public link, to open the project in the phone browser.
+
+The link gives access to the project to anyone who has it, and a dashboard configuration can
 be read by every Home Assistant user who sees the dashboard: only paste a link you are happy to
 share, and delete it from Cospend to revoke it. The button only shows for the project named in
 `project`.
