@@ -4,9 +4,28 @@ Home Assistant integration and Lovelace card for [Nextcloud Cospend](https://git
 the shared budget manager. The goal is the same experience as the Android app
 [Cowspent](https://github.com/helcel-net/cowspent), inside your dashboards and automations.
 
-> **Status: under development (milestone M5).** The integration reads your projects (sensors,
-> events), provides services to add, update and delete expenses, and queues them when Nextcloud is
-> unreachable. The Lovelace card shows balances, expenses, search and details . Do not rely on it in a production Home Assistant.
+> **Status: beta (milestone M8).** The integration reads your projects (sensors, events), provides
+> services to add, edit and delete expenses and to manage the project, and queues writes when
+> Nextcloud is unreachable. Four Lovelace cards (expenses, charts, actions) follow your theme.
+> Test it on a copy of your data first.
+
+## Screenshots
+
+*Wide layout (dashboard in panel view), light and dark themes:*
+
+![Wide layout, light theme](docs/screenshots/panel-light.png)
+![Wide layout, dark theme](docs/screenshots/panel-dark.png)
+
+*Statistics (flow diagram), and the card on a phone or in a one-column section:*
+
+<img src="docs/screenshots/statistics-flow.png" width="62%"> <img src="docs/screenshots/mobile.png" width="30%">
+
+*Standalone cards (actions, charts) and the edit pop-up:*
+
+![Standalone cards](docs/screenshots/standalone-cards.png)
+![Edit pop-up](docs/screenshots/edit-dialog.png)
+
+(The screenshots use made-up data.)
 
 ## Planned features
 
@@ -218,7 +237,7 @@ GPL-3.0 — see [`LICENSE`](LICENSE) and [`NOTICE.md`](NOTICE.md).
 Intégration Home Assistant et carte Lovelace pour [Nextcloud Cospend](https://github.com/julien-nc/cospend-nc),
 avec les mêmes fonctionnalités que l'application Android [Cowspent](https://github.com/helcel-net/cowspent).
 
-**État : en développement (jalon M5).** L'intégration lit vos projets (capteurs, événements), fournit les services `cospend.add_bill`, `cospend.update_bill` et `cospend.delete_bill`, et met les écritures en file d'attente quand Nextcloud est injoignable (rejeu sans doublon, conflits signalés). 
+**État : bêta (jalon M8).** L'intégration lit vos projets (capteurs, événements), fournit les services `cospend.add_bill`, `cospend.update_bill` et `cospend.delete_bill`, et met les écritures en file d'attente quand Nextcloud est injoignable (rejeu sans doublon, conflits signalés). 
 
 Connexion : adresse web (http / https) **ou** adresse IP locale + port, au choix, à l'installation comme à la reconfiguration. Avec une IP, ajoutez-la aux `trusted_domains` de Nextcloud (`occ config:system:set trusted_domains 2 --value=192.168.1.20`).
 

@@ -9,6 +9,7 @@ NAME: Final = "Cospend"
 
 CONF_PROJECTS: Final = "projects"
 CONF_FULL_RESYNC_HOURS: Final = "full_resync_hours"
+CONF_MANAGE_ADMIN_ONLY: Final = "manage_admin_only"
 
 DEFAULT_SCAN_INTERVAL: Final = 10  # minutes
 MIN_SCAN_INTERVAL: Final = 1

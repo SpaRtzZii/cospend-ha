@@ -128,11 +128,13 @@
         "data": {
           "projects": "Projects",
           "scan_interval": "Refresh interval (minutes)",
-          "full_resync_hours": "Full resynchronization (hours)"
+          "full_resync_hours": "Full resynchronization (hours)",
+          "manage_admin_only": "Restrict project management to administrators"
         },
         "data_description": {
           "scan_interval": "Only bills changed since the last read are fetched at each refresh.",
-          "full_resync_hours": "Re-reads every bill from time to time to catch silent changes."
+          "full_resync_hours": "Re-reads every bill from time to time to catch silent changes.",
+          "manage_admin_only": "The cospend.add_member, update_category, etc. services refuse users who are not Home Assistant administrators (automations are not affected)."
         }
       }
     },
@@ -678,6 +680,9 @@
     },
     "manage_unreachable": {
       "message": "Nextcloud is unreachable: this change is not queued, try again when the server is back."
+    },
+    "needs_admin": {
+      "message": "Managing the project (members, categories, payment modes, currencies) is restricted to Home Assistant administrators."
     }
   },
   "issues": {

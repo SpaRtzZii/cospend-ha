@@ -219,3 +219,57 @@ async def test_unreachable_server_gives_a_clear_message(
     with pytest.raises(HomeAssistantError) as info:
         await call(hass, "add_category", name="Sport")
     assert info.value.translation_key == "manage_unreachable"
+
+
+async def test_admin_only_option_refuses_ordinary_users(
+    hass: HomeAssistant,
+    mock_config_entry,
+    fake_client: FakeClient,
+    hass_admin_user,
+    hass_read_only_user,
+) -> None:
+    from unittest.mock import patch
+
+    from homeassistant.core import Context
+
+    mock_config_entry.add_to_hass(hass)
+    hass.config_entries.async_update_entry(
+        mock_config_entry, options={**mock_config_entry.options, "manage_admin_only": True}
+    )
+    with patch("custom_components.cospend.CospendClient", return_value=fake_client):
+        await hass.config_entries.async_setup(mock_config_entry.entry_id)
+        await hass.async_block_till_done()
+
+    async def as_user(user):
+        return await hass.services.async_call(
+            DOMAIN,
+            "add_member",
+            {"project": PROJECT, "name": "Zoé"},
+            blocking=True,
+            return_response=True,
+            context=Context(user_id=user.id),
+        )
+
+    with pytest.raises(ServiceValidationError) as error:
+        await as_user(hass_read_only_user)
+    assert error.value.translation_key == "needs_admin"
+    assert writes(fake_client) == []
+    # Un administrateur, et un appel sans utilisateur (automatisation), passent.
+    assert (await as_user(hass_admin_user))["project"] == PROJECT
+    assert (await call(hass, "add_member", name="Zoé 2"))["project"] == PROJECT
+
+
+async def test_without_the_option_every_user_can_manage(
+    hass: HomeAssistant, init_integration, fake_client: FakeClient, hass_read_only_user
+) -> None:
+    from homeassistant.core import Context
+
+    response = await hass.services.async_call(
+        DOMAIN,
+        "add_member",
+        {"project": PROJECT, "name": "Zoé"},
+        blocking=True,
+        return_response=True,
+        context=Context(user_id=hass_read_only_user.id),
+    )
+    assert response["project"] == PROJECT

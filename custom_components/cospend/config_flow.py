@@ -59,6 +59,7 @@ from aiocospend import (
 
 from .const import (
     CONF_FULL_RESYNC_HOURS,
+    CONF_MANAGE_ADMIN_ONLY,
     CONF_PROJECTS,
     DEFAULT_FULL_RESYNC_HOURS,
     DEFAULT_SCAN_INTERVAL,
@@ -219,6 +220,11 @@ def _options_schema(
                 unit_of_measurement="h",
             )
         )
+        schema[
+            vol.Required(
+                CONF_MANAGE_ADMIN_ONLY, default=bool(defaults.get(CONF_MANAGE_ADMIN_ONLY, False))
+            )
+        ] = BooleanSelector()
     return vol.Schema(schema)
 
 
@@ -464,6 +470,7 @@ class CospendOptionsFlow(OptionsFlow):
                         CONF_PROJECTS: user_input[CONF_PROJECTS],
                         CONF_SCAN_INTERVAL: int(user_input[CONF_SCAN_INTERVAL]),
                         CONF_FULL_RESYNC_HOURS: int(user_input[CONF_FULL_RESYNC_HOURS]),
+                        CONF_MANAGE_ADMIN_ONLY: bool(user_input.get(CONF_MANAGE_ADMIN_ONLY, False)),
                     }
                 )
         return self.async_show_form(
