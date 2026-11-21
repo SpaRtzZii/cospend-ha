@@ -63,6 +63,7 @@ class CospendCardEditor extends LitElement {
       { name: "show_search", selector: { boolean: {} } },
       { name: "allow_write", selector: { boolean: {} } },
       { name: "show_settlement", selector: { boolean: {} } },
+      { name: "show_project_select", selector: { boolean: {} } },
       { name: "show_stats", selector: { boolean: {} } },
       { name: "wide_layout", selector: { boolean: {} } },
       { name: "allow_manage", selector: { boolean: {} } },
@@ -81,6 +82,7 @@ class CospendCardEditor extends LitElement {
       show_search: config?.show_search ?? true,
       allow_write: config?.allow_write ?? true,
       show_settlement: config?.show_settlement ?? true,
+      show_project_select: config?.show_project_select ?? true,
       show_stats: config?.show_stats ?? true,
       wide_layout: config?.wide_layout ?? true,
       allow_manage: config?.allow_manage ?? false,
@@ -101,7 +103,7 @@ class CospendCardEditor extends LitElement {
     const project = this._projects.find((item) => item.id === config.project);
     if (project) config.entry_id = project.entry_id;
     else delete config.entry_id;
-    for (const key of ["show_balances", "inline_balances", "show_bills", "show_search", "allow_write", "show_settlement", "show_stats", "wide_layout", "allow_manage"] as const) {
+    for (const key of ["show_balances", "inline_balances", "show_bills", "show_search", "allow_write", "show_settlement", "show_stats", "show_project_select", "wide_layout", "allow_manage"] as const) {
       config[key] = value[key] !== false;
     }
     config.page_size = Number(value.page_size) || 20;
