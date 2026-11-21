@@ -35,11 +35,14 @@ import "./balances";
 import "./settlement";
 import "./stats";
 import "./cospend-card-editor";
+import "./actions-card";
 import "./chart-card";
 
 const DEFAULT_PAGE_SIZE = 20;
 const SEARCH_DELAY_MS = 300;
 const REFRESH_DELAY_MS = 500;
+/** Largeur de la carte (px) à partir de laquelle la disposition en deux colonnes s'applique. */
+const WIDE_MIN_WIDTH = 900;
 
 class CospendCard extends LitElement {
   static properties = {
@@ -63,6 +66,7 @@ class CospendCard extends LitElement {
     _confirming: { state: true },
     _busy: { state: true },
     _notice: { state: true },
+    _wide: { state: true },
   };
 
   declare hass?: HassLike;
@@ -85,6 +89,7 @@ class CospendCard extends LitElement {
   declare _confirming: boolean;
   declare _busy: boolean;
   declare _notice: { kind: "ok" | "error"; text: string } | null;
+  declare _wide: boolean;
 
   private _unsubscribe?: () => void;
   private _subscribing = false;
@@ -93,6 +98,7 @@ class CospendCard extends LitElement {
   private _refreshTimer?: ReturnType<typeof setTimeout>;
   private _noticeTimer?: ReturnType<typeof setTimeout>;
   private _requestId = 0;
+  private _resizer?: ResizeObserver;
 
   constructor() {
     super();
@@ -114,6 +120,7 @@ class CospendCard extends LitElement {
     this._confirming = false;
     this._busy = false;
     this._notice = null;
+    this._wide = false;
   }
 
   static getConfigElement(): HTMLElement {
@@ -144,11 +151,20 @@ class CospendCard extends LitElement {
 
   connectedCallback(): void {
     super.connectedCallback();
+    if (typeof ResizeObserver !== "undefined") {
+      this._resizer = new ResizeObserver((entries) => {
+        const width = entries[0]?.contentRect.width ?? 0;
+        this._wide = width >= WIDE_MIN_WIDTH;
+      });
+      this._resizer.observe(this);
+    }
     if (this.hass) void this._start();
   }
 
   disconnectedCallback(): void {
     super.disconnectedCallback();
+    this._resizer?.disconnect();
+    this._resizer = undefined;
     this._unsubscribe?.();
     this._unsubscribe = undefined;
     this._subscribing = false;
@@ -388,7 +404,10 @@ class CospendCard extends LitElement {
     if (!this._projects) return this._shell(title, html`<p class="hint">${this._t("loading")}</p>`);
     if (!this._project) return this._shell(title, html`<p class="hint">${this._t("no_projects")}</p>`);
     const project = this._project;
-    const body = this._balances
+    const wide = this._isWide;
+    const body = wide && !this._manage
+      ? this._renderWide(project)
+      : this._balances
       ? html`<cospend-balances
           .hass=${this.hass}
           .project=${project}
@@ -446,6 +465,76 @@ class CospendCard extends LitElement {
     return this._shell(title ?? project.name, body, project);
   }
 
+  private get _isWide(): boolean {
+    return this._wide && this._config?.wide_layout !== false;
+  }
+
+  /** Colonne de droite (ou carte entière en une colonne) : formulaire, détail ou liste. */
+  private _renderRight(project: Project): TemplateResult {
+    if (this._form) {
+      return html`<cospend-bill-form
+        .hass=${this.hass}
+        .project=${project}
+        .bill=${this._editing ? (this._detail ?? undefined) : undefined}
+        @cancel=${() => {
+          this._form = false;
+          this._editing = false;
+        }}
+        @saved=${(event: CustomEvent<WriteResult & { edited?: boolean }>) =>
+          void this._onSaved(event)}
+      ></cospend-bill-form>`;
+    }
+    if (this._detail) return this._renderDetail(project, this._detail);
+    return html`
+      ${project.available ? nothing : html`<p class="banner warn">${this._t("unavailable")}</p>`}
+      ${this._failed ? this._renderError() : nothing}
+      ${this._renderBills(project)}
+    `;
+  }
+
+  /** Disposition large : soldes et remboursements, puis statistiques, à gauche ; dépenses à droite. */
+  private _renderWide(project: Project): TemplateResult {
+    const config = this._config;
+    const showBalances = config?.show_balances !== false;
+    const showSettle = config?.show_settlement !== false;
+    const showStats = config?.show_stats !== false;
+    const showBills = config?.show_bills !== false;
+    const hasLeft = showBalances || showSettle || showStats;
+    return html`
+      <div class="wide ${hasLeft && showBills ? "two" : ""}">
+        ${hasLeft
+          ? html`<div class="col-left">
+              ${showBalances || showSettle
+                ? html`<section class="panel">
+                    ${showBalances
+                      ? html`<cospend-balances inline .hass=${this.hass} .project=${project}></cospend-balances>`
+                      : nothing}
+                    ${showSettle
+                      ? html`<cospend-settlement
+                          embedded
+                          .hass=${this.hass}
+                          .project=${project}
+                          .canWrite=${this._canWrite(project)}
+                          @changed=${(event: CustomEvent<{ text: string }>) => {
+                            this._announce("ok", event.detail.text);
+                            void this._refresh();
+                          }}
+                        ></cospend-settlement>`
+                      : nothing}
+                  </section>`
+                : nothing}
+              ${showStats
+                ? html`<section class="panel">
+                    <cospend-stats embedded .hass=${this.hass} .project=${project}></cospend-stats>
+                  </section>`
+                : nothing}
+            </div>`
+          : nothing}
+        ${showBills ? html`<div class="col-right">${this._renderRight(project)}</div>` : nothing}
+      </div>
+    `;
+  }
+
   private _shell(title: string | undefined, body: unknown, project?: Project): TemplateResult {
     const projects = this._projects ?? [];
     const chooser = !this._config?.project && projects.length > 1;
@@ -465,7 +554,7 @@ class CospendCard extends LitElement {
                 ${this._t("pending_count", { count: project.pending })}
               </span>`
             : nothing}
-          ${project && this._config?.show_balances !== false && this._config?.inline_balances !== true && !this._form && !this._manage && !this._settle && !this._stats && !this._balances
+          ${project && this._config?.show_balances !== false && this._config?.inline_balances !== true && !this._isWide && !this._form && !this._manage && !this._settle && !this._stats && !this._balances
             ? html`<button
                 class="gear balances"
                 aria-label=${this._t("balances")}
@@ -478,7 +567,7 @@ class CospendCard extends LitElement {
                 <ha-icon icon="mdi:scale-balance"></ha-icon>
               </button>`
             : nothing}
-          ${project && this._config?.show_stats !== false && !this._form && !this._manage && !this._settle && !this._stats && !this._balances
+          ${project && this._config?.show_stats !== false && !this._isWide && !this._form && !this._manage && !this._settle && !this._stats && !this._balances
             ? html`<button
                 class="gear stats"
                 aria-label=${this._t("stats")}
@@ -491,7 +580,7 @@ class CospendCard extends LitElement {
                 <ha-icon icon="mdi:chart-box-outline"></ha-icon>
               </button>`
             : nothing}
-          ${project && this._config?.show_settlement !== false && !this._form && !this._manage && !this._settle && !this._stats && !this._balances
+          ${project && this._config?.show_settlement !== false && !this._isWide && !this._form && !this._manage && !this._settle && !this._stats && !this._balances
             ? html`<button
                 class="gear settle"
                 aria-label=${this._t("settlement")}
@@ -766,6 +855,32 @@ class CospendCard extends LitElement {
   static styles = css`
     :host {
       display: block;
+    }
+    .wide {
+      display: block;
+      padding: 8px 16px 8px;
+    }
+    .wide.two {
+      display: grid;
+      grid-template-columns: minmax(380px, 5fr) minmax(0, 7fr);
+      gap: 16px;
+      align-items: start;
+    }
+    .wide .col-left,
+    .wide .col-right {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      min-width: 0;
+    }
+    .wide .panel cospend-balances {
+      display: block;
+      padding: 0 16px;
+    }
+    .wide .panel {
+      padding: 4px 4px 8px;
+      border: 1px solid var(--divider-color);
+      border-radius: 12px;
     }
     ha-card {
       overflow: hidden;

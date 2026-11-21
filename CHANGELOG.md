@@ -4,6 +4,10 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 
 ## [Non publié]
 
+### Ajouté (jalons M7d et M7e : carte d'actions, disposition large)
+- Nouvelle carte `custom:cospend-actions-card` (éditeur visuel inclus) : trois boutons (Ajouter, Modifier, Supprimer une dépense). Chaque bouton ouvre une fenêtre ; pour modifier ou supprimer, une liste déroulante avec recherche permet de choisir la dépense, et la suppression demande confirmation. Options : `project`, `title`, `show_add`, `show_edit`, `show_delete`, `allow_write`.
+- Carte principale : quand elle est large (environ 900 px et plus, par exemple en vue panneau), elle passe en deux colonnes : soldes et remboursements à gauche, statistiques en dessous, liste des dépenses à droite (recherche, ajout, modification, suppression). Inchangée en une colonne. Option `wide_layout: false` pour désactiver.
+
 ### Ajouté (jalon M7c : cartes de graphiques)
 - Nouvelle carte `custom:cospend-chart-card` (éditeur visuel inclus) : un seul graphique du
   projet, à poser seul sur un tableau de bord. Cinq graphiques : `months` (dépenses par mois,

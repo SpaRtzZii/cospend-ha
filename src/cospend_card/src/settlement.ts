@@ -23,6 +23,7 @@ class CospendSettlement extends LitElement {
     hass: { attribute: false },
     project: { attribute: false },
     canWrite: { type: Boolean },
+    embedded: { type: Boolean },
     _plan: { state: true },
     _loading: { state: true },
     _error: { state: true },
@@ -33,6 +34,7 @@ class CospendSettlement extends LitElement {
   declare hass?: HassLike;
   declare project?: Project;
   declare canWrite: boolean;
+  declare embedded: boolean;
   declare _plan: SettlementPlan | null;
   declare _loading: boolean;
   declare _error: string;
@@ -42,6 +44,7 @@ class CospendSettlement extends LitElement {
   constructor() {
     super();
     this.canWrite = false;
+    this.embedded = false;
     this._plan = null;
     this._loading = false;
     this._error = "";
@@ -133,9 +136,11 @@ class CospendSettlement extends LitElement {
     return html`
       <div class="wrap">
         <div class="top">
-          <button class="icon back" aria-label=${this._t("back")} @click=${this._close}>
-            <ha-icon icon="mdi:arrow-left"></ha-icon>
-          </button>
+          ${this.embedded
+            ? nothing
+            : html`<button class="icon back" aria-label=${this._t("back")} @click=${this._close}>
+                <ha-icon icon="mdi:arrow-left"></ha-icon>
+              </button>`}
           <h2>${this._t("settlement_title")}</h2>
         </div>
         ${this._error ? html`<p class="error" role="alert">${this._error}</p>` : nothing}
