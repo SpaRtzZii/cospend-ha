@@ -4,10 +4,23 @@ Home Assistant integration and Lovelace card for [Nextcloud Cospend](https://git
 the shared budget manager. The goal is the same experience as the Android app
 [Cowspent](https://github.com/helcel-net/cowspent), inside your dashboards and automations.
 
-> **Status: beta (milestone M8).** The integration reads your projects (sensors, events), provides
+> **Status: stable (1.0).** The integration reads your projects (sensors, events), provides
 > services to add, edit and delete expenses and to manage the project, and queues writes when
-> Nextcloud is unreachable. Four Lovelace cards (expenses, charts, actions) follow your theme.
-> Test it on a copy of your data first.
+> Nextcloud is unreachable. Three Lovelace cards (expenses, charts, actions) follow your theme.
+
+## Installation
+
+**With HACS** (recommended): open HACS, search for **Cospend**, download it, then restart Home
+Assistant. If it does not appear in the list yet, add this repository by hand: HACS → ⋮ →
+*Custom repositories* → `https://github.com/SpaRtzZii/cospend-ha`, category *Integration*.
+
+**Manually:** download `cospend.zip` from the
+[latest release](https://github.com/SpaRtzZii/cospend-ha/releases/latest), unzip it into
+`config/custom_components/cospend/`, and restart Home Assistant.
+
+Then go to *Settings → Devices & services → Add integration → Cospend* and sign in with a
+Nextcloud **app password** (Nextcloud → Settings → Security → Devices & sessions). Requires
+Home Assistant 2026.11 or newer and a Cospend server (see *Scope* below).
 
 ## Screenshots
 
@@ -27,14 +40,16 @@ the shared budget manager. The goal is the same experience as the Android app
 
 (The screenshots use made-up data.)
 
-## Planned features
+## Features
 
 - **Integration** — choose which Cospend projects to connect; services to create, edit and delete
-  expenses from automations; sensors (balances, last expense); events when expenses change.
+  expenses from automations; sensors (balances, last expense); events when expenses change;
+  diagnostics.
 - **Offline mode** — expenses created while Nextcloud is unreachable are queued and sent later,
   without duplicates.
-- **Lovelace card** — the same screens as Cowspent: expenses, splits (even, custom, percent),
-  currencies, search, statistics, settlement plan.
+- **Lovelace cards** — the same screens as Cowspent: expenses, splits (even, custom, percent),
+  currencies, search, statistics, settlement plan, charts, a card of quick actions, project
+  settings, and a QR code to open a project in Cowspent. Phone, tablet and wide (panel) layouts.
 - **Scope** — Nextcloud Cospend servers only (Cospend ≥ 1.6.1). IHateMoney is not supported.
 
 ## Connecting to Nextcloud
@@ -222,7 +237,7 @@ integration cannot start while Nextcloud is down (queued operations are kept and
 | Path | Content |
 | --- | --- |
 | `custom_components/cospend/` | Home Assistant integration (domain `cospend`) |
-| `lib/aiocospend/` | Async Python client for the Cospend OCS API (to be published on PyPI) |
+| `lib/aiocospend/` | Async Python client for the Cospend OCS API (published on PyPI) |
 | `src/cospend_card/` | Lovelace card (TypeScript + Lit), built into the integration at release time |
 | `dev/` | Disposable Nextcloud + Cospend test server (Docker) |
 | `tests/` | Integration tests and contract tests |
@@ -262,13 +277,15 @@ GPL-3.0 — see [`LICENSE`](LICENSE) and [`NOTICE.md`](NOTICE.md).
 Intégration Home Assistant et carte Lovelace pour [Nextcloud Cospend](https://github.com/julien-nc/cospend-nc),
 avec les mêmes fonctionnalités que l'application Android [Cowspent](https://github.com/helcel-net/cowspent).
 
-**État : bêta (jalon M8).** L'intégration lit vos projets (capteurs, événements), fournit les services `cospend.add_bill`, `cospend.update_bill` et `cospend.delete_bill`, et met les écritures en file d'attente quand Nextcloud est injoignable (rejeu sans doublon, conflits signalés). 
+**État : stable (1.0).** L'intégration lit vos projets (capteurs, événements), fournit les services `cospend.add_bill`, `cospend.update_bill` et `cospend.delete_bill`, et met les écritures en file d'attente quand Nextcloud est injoignable (rejeu sans doublon, conflits signalés). 
 
 Connexion : adresse web (http / https) **ou** adresse IP locale + port, au choix, à l'installation comme à la reconfiguration. Avec une IP, ajoutez-la aux `trusted_domains` de Nextcloud (`occ config:system:set trusted_domains 2 --value=192.168.1.20`).
 
 Carte Lovelace (`custom:cospend-card`) : liste des dépenses (répartitions personnalisées regroupées), recherche et détail avec la part de chacun. Elle suit le thème de Home Assistant, se met à jour toute seule et s'ajoute depuis le sélecteur de cartes (éditeur visuel inclus). On peut y ajouter une dépense (répartition égale, par montants ou par pourcentages, devise étrangère, répétition), la modifier et la supprimer après confirmation (corbeille de Nextcloud) ; hors ligne, l'opération est mise en file d'attente. Avec le niveau gestionnaire, une roue crantée ouvre les réglages du projet : membres, catégories, modes de paiement et devises (ces modifications exigent une connexion à Nextcloud). Le montant, les participants et la devise d'une répartition personnalisée ne se modifient pas (supprimer puis recréer). Les soldes des membres s'ouvrent depuis le bouton « Soldes » (`show_balances`), pour garder la carte légère ; `inline_balances: true` les remet au-dessus des dépenses. Le bouton « Remboursements » (`show_settlement`) affiche le plan de Cospend (qui doit combien à qui, vos lignes en premier) et enregistre un remboursement en un geste : dépense payée par le débiteur au profit du créditeur, catégorie 💰 Remboursement ; si Nextcloud ne répond pas, le plan est calculé localement et l'enregistrement est mis en file d'attente. Le bouton « Statistiques » (`show_stats`) ouvre un tableau (par membre : payé, part et solde ; par catégorie, mode de paiement et mois), des graphiques (dépenses par mois empilées par catégorie, dépenses par catégorie) et un diagramme de Sankey (qui a payé, dans quelle catégorie, pour qui), avec des filtres : période, payé par, pour, catégorie, mode de paiement, remboursements. Les chiffres sont calculés par Home Assistant sur les dépenses déjà synchronisées : ils fonctionnent hors ligne et excluent par défaut les remboursements. La carte `custom:cospend-chart-card` affiche un seul graphique (par mois, par catégorie, par membre, flux ou soldes) sur un tableau de bord, avec sa période et ses filtres ; on peut en poser plusieurs côte à côte. `allow_write: false` rend la carte en lecture seule ; la roue crantée (réglages du projet) est réservée aux administrateurs de Home Assistant ; cocher `allow_manage` (éditeur visuel) l'ouvre à tous les utilisateurs. Le niveau gestionnaire sur Nextcloud reste exigé dans les deux cas. C'est un réglage d'affichage : les services `cospend.*` restent appelables par tout utilisateur autorisé à appeler des services.
 
-Prévu : choix des projets à connecter, services pour créer / modifier / supprimer des dépenses depuis
-les automatisations, mode hors ligne (file d'attente sans doublons), carte Lovelace complète.
+Installation : via HACS (recherche « Cospend », ou dépôt personnalisé `https://github.com/SpaRtzZii/cospend-ha`, catégorie *Intégration*), ou en copiant `cospend.zip` de la dernière release dans `config/custom_components/cospend/`, puis redémarrage de Home Assistant. La connexion se fait avec un **mot de passe d'application** Nextcloud.
+
+Cartes : `custom:cospend-card` (principale, avec disposition téléphone, tablette et grand écran), `custom:cospend-chart-card` (un graphique) et `custom:cospend-actions-card` (boutons Ajouter, Modifier, Supprimer). Le bouton Partager affiche un QR code qui ouvre le projet dans Cowspent (voir « Sharing with a QR code »).
+
 Fonctionne uniquement avec un serveur Nextcloud (Cospend ≥ 1.6.1) ; IHateMoney n'est pas pris en charge.
 Voir la section « Development » ci-dessus pour les commandes de test.

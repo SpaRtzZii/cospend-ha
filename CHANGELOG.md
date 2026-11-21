@@ -4,6 +4,12 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 
 ## [Non publié]
 
+## [1.0.0] - 2026-11-21
+
+### Première version stable
+
+- Validation HACS sans exception, README d'installation, modèles d'issues (bug, fonctionnalité).
+
 ### Modifié
 
 - Carte : le QR code de partage encode désormais `cospend://hôte/<token>/no-pass` (import direct dans Cowspent), avec bascule vers le lien de la page web.
