@@ -53,6 +53,28 @@ allow_manage: false        # project settings (gear): true = every user, false =
 page_size: 20              # expenses loaded at a time
 ```
 
+### Chart card
+
+`custom:cospend-chart-card` shows **one chart** on a dashboard, on its own (visual editor
+included). Several of them can sit side by side, each with its own period and filters:
+
+```yaml
+type: custom:cospend-chart-card
+chart: months              # months | categories | members | flows | balances
+period: month              # month | last_month | last_30 | year | all
+project: my-project        # optional: without it, the first active project
+title: Spending            # optional: defaults to the chart name
+payer: 2                   # optional: only the expenses paid by this member (id)
+category: 5                # optional: only this category (id, 0 = no category)
+include_reimbursements: false
+show_total: true           # total and number of expenses under the title
+```
+
+`months` stacks the spending of each month by category, `categories` ranks the categories,
+`members` compares what each member paid with their share, `flows` is the payer → category →
+beneficiary diagram and `balances` shows the member balances. The figures are computed by Home
+Assistant on the synchronised expenses, and the card refreshes itself when they change.
+
 The card follows your Home Assistant theme (light, dark, custom themes) and language (English and
 French). It shows the expense list (custom splits are shown as one expense), a search
 and the detail of each expense with everyone's share. It updates on its own and shows the
@@ -162,7 +184,7 @@ avec les mêmes fonctionnalités que l'application Android [Cowspent](https://gi
 
 Connexion : adresse web (http / https) **ou** adresse IP locale + port, au choix, à l'installation comme à la reconfiguration. Avec une IP, ajoutez-la aux `trusted_domains` de Nextcloud (`occ config:system:set trusted_domains 2 --value=192.168.1.20`).
 
-Carte Lovelace (`custom:cospend-card`) : liste des dépenses (répartitions personnalisées regroupées), recherche et détail avec la part de chacun. Elle suit le thème de Home Assistant, se met à jour toute seule et s'ajoute depuis le sélecteur de cartes (éditeur visuel inclus). On peut y ajouter une dépense (répartition égale, par montants ou par pourcentages, devise étrangère, répétition), la modifier et la supprimer après confirmation (corbeille de Nextcloud) ; hors ligne, l'opération est mise en file d'attente. Avec le niveau gestionnaire, une roue crantée ouvre les réglages du projet : membres, catégories, modes de paiement et devises (ces modifications exigent une connexion à Nextcloud). Le montant, les participants et la devise d'une répartition personnalisée ne se modifient pas (supprimer puis recréer). Les soldes des membres s'ouvrent depuis le bouton « Soldes » (`show_balances`), pour garder la carte légère ; `inline_balances: true` les remet au-dessus des dépenses. Le bouton « Remboursements » (`show_settlement`) affiche le plan de Cospend (qui doit combien à qui, vos lignes en premier) et enregistre un remboursement en un geste : dépense payée par le débiteur au profit du créditeur, catégorie 💰 Remboursement ; si Nextcloud ne répond pas, le plan est calculé localement et l'enregistrement est mis en file d'attente. Le bouton « Statistiques » (`show_stats`) ouvre un tableau (par membre : payé, part et solde ; par catégorie, mode de paiement et mois), des graphiques (dépenses par mois empilées par catégorie, dépenses par catégorie) et un diagramme de Sankey (qui a payé, dans quelle catégorie, pour qui), avec des filtres : période, payé par, pour, catégorie, mode de paiement, remboursements. Les chiffres sont calculés par Home Assistant sur les dépenses déjà synchronisées : ils fonctionnent hors ligne et excluent par défaut les remboursements. `allow_write: false` rend la carte en lecture seule ; la roue crantée (réglages du projet) est réservée aux administrateurs de Home Assistant ; cocher `allow_manage` (éditeur visuel) l'ouvre à tous les utilisateurs. Le niveau gestionnaire sur Nextcloud reste exigé dans les deux cas. C'est un réglage d'affichage : les services `cospend.*` restent appelables par tout utilisateur autorisé à appeler des services.
+Carte Lovelace (`custom:cospend-card`) : liste des dépenses (répartitions personnalisées regroupées), recherche et détail avec la part de chacun. Elle suit le thème de Home Assistant, se met à jour toute seule et s'ajoute depuis le sélecteur de cartes (éditeur visuel inclus). On peut y ajouter une dépense (répartition égale, par montants ou par pourcentages, devise étrangère, répétition), la modifier et la supprimer après confirmation (corbeille de Nextcloud) ; hors ligne, l'opération est mise en file d'attente. Avec le niveau gestionnaire, une roue crantée ouvre les réglages du projet : membres, catégories, modes de paiement et devises (ces modifications exigent une connexion à Nextcloud). Le montant, les participants et la devise d'une répartition personnalisée ne se modifient pas (supprimer puis recréer). Les soldes des membres s'ouvrent depuis le bouton « Soldes » (`show_balances`), pour garder la carte légère ; `inline_balances: true` les remet au-dessus des dépenses. Le bouton « Remboursements » (`show_settlement`) affiche le plan de Cospend (qui doit combien à qui, vos lignes en premier) et enregistre un remboursement en un geste : dépense payée par le débiteur au profit du créditeur, catégorie 💰 Remboursement ; si Nextcloud ne répond pas, le plan est calculé localement et l'enregistrement est mis en file d'attente. Le bouton « Statistiques » (`show_stats`) ouvre un tableau (par membre : payé, part et solde ; par catégorie, mode de paiement et mois), des graphiques (dépenses par mois empilées par catégorie, dépenses par catégorie) et un diagramme de Sankey (qui a payé, dans quelle catégorie, pour qui), avec des filtres : période, payé par, pour, catégorie, mode de paiement, remboursements. Les chiffres sont calculés par Home Assistant sur les dépenses déjà synchronisées : ils fonctionnent hors ligne et excluent par défaut les remboursements. La carte `custom:cospend-chart-card` affiche un seul graphique (par mois, par catégorie, par membre, flux ou soldes) sur un tableau de bord, avec sa période et ses filtres ; on peut en poser plusieurs côte à côte. `allow_write: false` rend la carte en lecture seule ; la roue crantée (réglages du projet) est réservée aux administrateurs de Home Assistant ; cocher `allow_manage` (éditeur visuel) l'ouvre à tous les utilisateurs. Le niveau gestionnaire sur Nextcloud reste exigé dans les deux cas. C'est un réglage d'affichage : les services `cospend.*` restent appelables par tout utilisateur autorisé à appeler des services.
 
 Prévu : choix des projets à connecter, services pour créer / modifier / supprimer des dépenses depuis
 les automatisations, mode hors ligne (file d'attente sans doublons), carte Lovelace complète.

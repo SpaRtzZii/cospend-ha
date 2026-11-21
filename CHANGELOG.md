@@ -4,6 +4,18 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 
 ## [Non publié]
 
+### Ajouté (jalon M7c : cartes de graphiques)
+- Nouvelle carte `custom:cospend-chart-card` (éditeur visuel inclus) : un seul graphique du
+  projet, à poser seul sur un tableau de bord. Cinq graphiques : `months` (dépenses par mois,
+  empilées par catégorie), `categories`, `members` (payé et part de chaque membre), `flows`
+  (Sankey payeur → catégorie → bénéficiaire) et `balances` (soldes).
+- Période (`period` : mois en cours, mois dernier, 30 jours, année, tout), filtres `payer`,
+  `category` et `include_reimbursements`, total sous le titre (`show_total`). La carte se met à
+  jour toute seule quand les dépenses changent.
+- Vue Statistiques de la carte principale : nouveau graphique « Par membre » et légende des
+  catégories sous le graphique par mois. Les graphiques sont désormais partagés entre les deux
+  cartes.
+
 ### Modifié
 - Soldes des membres : ils ont maintenant leur écran, ouvert par un bouton « Soldes » dans
   l'en-tête (comme Statistiques, Remboursements et Réglages), ce qui allège la carte. L'écran

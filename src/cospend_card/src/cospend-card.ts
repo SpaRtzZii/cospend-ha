@@ -35,6 +35,7 @@ import "./balances";
 import "./settlement";
 import "./stats";
 import "./cospend-card-editor";
+import "./chart-card";
 
 const DEFAULT_PAGE_SIZE = 20;
 const SEARCH_DELAY_MS = 300;
