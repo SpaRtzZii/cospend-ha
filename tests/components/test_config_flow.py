@@ -27,7 +27,12 @@ from aiocospend import (
     CospendVersionError,
 )
 from custom_components.cospend.config_flow import InvalidHostError, build_local_url
-from custom_components.cospend.const import CONF_FULL_RESYNC_HOURS, CONF_PROJECTS, DOMAIN
+from custom_components.cospend.const import (
+    CONF_FULL_RESYNC_HOURS,
+    CONF_MANAGE_ADMIN_ONLY,
+    CONF_PROJECTS,
+    DOMAIN,
+)
 
 from .fake_client import FakeClient
 
@@ -286,6 +291,7 @@ async def test_options_flow(
         CONF_PROJECTS: ["teste"],
         CONF_SCAN_INTERVAL: 5,
         CONF_FULL_RESYNC_HOURS: 12,
+        CONF_MANAGE_ADMIN_ONLY: False,
     }
 
 

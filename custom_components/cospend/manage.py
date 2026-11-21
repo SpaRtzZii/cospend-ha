@@ -26,7 +26,8 @@ from aiocospend import (
 from aiocospend.const import DEFAULT_COLOR
 from aiocospend.writer import _match
 
-from .const import DOMAIN
+from .const import CONF_MANAGE_ADMIN_ONLY, DOMAIN
+from .coordinator import CospendCoordinator
 from .services import (
     _REF,
     ATTR_PROJECT,
@@ -70,6 +71,22 @@ def _hex(rgb: tuple[int, int, int] | None) -> str | None:
     return None if rgb is None else "#{:02x}{:02x}{:02x}".format(*rgb)
 
 
+async def _check_admin(call: ServiceCall, coordinator: CospendCoordinator) -> None:
+    """Réserve les services de gestion aux administrateurs si l'option est activée.
+
+    Seuls les appels faits par un utilisateur connu sont contrôlés : les automatisations et les
+    scripts (sans utilisateur) ne sont pas concernés.
+    """
+    if not coordinator.config_entry.options.get(CONF_MANAGE_ADMIN_ONLY, False):
+        return
+    user_id = call.context.user_id
+    if user_id is None:
+        return
+    user = await call.hass.auth.async_get_user(user_id)
+    if user is not None and not user.is_admin:
+        raise _error("needs_admin")
+
+
 def _check_maintainer(project: Project) -> None:
     if project.access_level < MAINTAINER_LEVEL:
         raise _error("needs_maintainer", project=project.name)
@@ -101,6 +118,7 @@ async def _manage(
     """Résout le projet et l'élément visé, exécute l'appel puis rafraîchit les données."""
     hass, data = call.hass, call.data
     coordinator, project_data = _find_project(hass, data[ATTR_PROJECT])
+    await _check_admin(call, coordinator)
     _check_writable(project_data)
     _check_maintainer(project_data.project)
     project_id = project_data.project.id

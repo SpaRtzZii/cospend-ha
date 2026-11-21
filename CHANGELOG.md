@@ -4,6 +4,10 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 
 ## [Non publié]
 
+### Ajouté (jalon M8b : barrière administrateur, captures d'écran)
+- Option de l'intégration « Réserver la gestion du projet aux administrateurs » : les services de gestion (membres, catégories, modes de paiement, devises) refusent alors les utilisateurs qui ne sont pas administrateurs de Home Assistant ; les automatisations ne sont pas concernées. Désactivée par défaut.
+- README : captures d'écran (vue panneau claire et sombre, statistiques, mobile, cartes indépendantes, fenêtre de modification) et état du projet à jour.
+
 ### Ajouté (jalon M8a : démarrage sans Nextcloud)
 - L'intégration garde une copie locale des projets, des dépenses et des statistiques après chaque lecture réussie. Si Nextcloud est injoignable au lancement de Home Assistant, elle repart de cette copie (lecture seule, écritures mises en file d'attente) et réessaie chaque minute ; sans copie, le comportement est inchangé.
 

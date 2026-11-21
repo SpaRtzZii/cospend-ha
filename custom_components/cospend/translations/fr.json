@@ -128,11 +128,13 @@
         "data": {
           "projects": "Projets",
           "scan_interval": "Intervalle d'actualisation (minutes)",
-          "full_resync_hours": "Resynchronisation complète (heures)"
+          "full_resync_hours": "Resynchronisation complète (heures)",
+          "manage_admin_only": "Réserver la gestion du projet aux administrateurs"
         },
         "data_description": {
           "scan_interval": "À chaque actualisation, seules les dépenses modifiées depuis la dernière lecture sont récupérées.",
-          "full_resync_hours": "Relit toutes les dépenses de temps en temps pour repérer les changements silencieux."
+          "full_resync_hours": "Relit toutes les dépenses de temps en temps pour repérer les changements silencieux.",
+          "manage_admin_only": "Les services cospend.add_member, update_category, etc. refusent les utilisateurs qui ne sont pas administrateurs de Home Assistant (les automatisations ne sont pas concernées)."
         }
       }
     },
@@ -678,6 +680,9 @@
     },
     "manage_unreachable": {
       "message": "Nextcloud est injoignable : cette modification n'est pas mise en file d'attente, réessayez quand le serveur est de retour."
+    },
+    "needs_admin": {
+      "message": "La gestion du projet (membres, catégories, modes de paiement, devises) est réservée aux administrateurs de Home Assistant."
     }
   },
   "issues": {
